@@ -432,6 +432,8 @@ export class ModuleComponent {
   // View content (navigate to content viewer)
   viewContent(content: ContentItem): void {
     console.log('📖 Viewing content:', content.title);
+    console.log('📖 Content type:', content.contentType);
+    console.log('📖 Content URL:', content.contentUrl);
     
     if (content.contentUrl) {
       let fullUrl = content.contentUrl;
@@ -439,7 +441,7 @@ export class ModuleComponent {
       // Nếu là content type 'link', URL đã là đầy đủ (https://youtu.be/...)
       if (content.contentType === 'link') {
         fullUrl = content.contentUrl;
-      } else {
+      } else if (content.contentType === 'document') {
         // Nếu là document, cần thêm base URL
         fullUrl = `http://localhost:8080${content.contentUrl}`;
       }
@@ -447,7 +449,17 @@ export class ModuleComponent {
       window.open(fullUrl, '_blank');
       console.log('🔗 Opening URL:', fullUrl);
     } else {
-      console.warn('Content URL not available for:', content.title);
+      console.warn('⚠️ Content URL not available for:', content.title);
+      console.warn('📋 Content type:', content.contentType);
+      
+      // Show appropriate message based on content type
+      if (content.contentType === 'document') {
+        alert('Tài liệu chưa được tải lên cho nội dung này.');
+      } else if (content.contentType === 'link') {
+        alert('Liên kết chưa được thiết lập cho nội dung này.');
+      } else {
+        alert('Nội dung này chưa có tài liệu hoặc liên kết đính kèm.');
+      }
     }
   }
 

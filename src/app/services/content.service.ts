@@ -33,6 +33,7 @@ export interface ContentDto {
   moduleId: number;
   title: string;
   contentType: 'document' | 'link';
+  contentUrl?: string; // For link content
   description?: string;
   orderNumber: number;
   isPublished: boolean;
@@ -89,6 +90,10 @@ export class ContentService {
     
     if (content.description) {
       formData.append('description', content.description);
+    }
+    
+    if (content.contentUrl) {
+      formData.append('contentUrl', content.contentUrl);
     }
     
     if (file) {
