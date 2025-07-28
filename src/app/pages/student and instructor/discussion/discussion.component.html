@@ -1,0 +1,768 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <main class="discussion-container">
+      <!-- Discussion List View -->
+      <div class="discussion-list" *ngIf="currentView === 'list'">
+        <div class="discussion-header">
+          <h2><i class="fas fa-comments"></i> Thảo luận khóa học</h2>
+          <button class="btn btn-primary" (click)="showCreateForm()">
+            <i class="fas fa-plus"></i> Tạo thảo luận mới
+          </button>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="discussion-filters">
+          <div class="filter-buttons">
+            <button class="filter-btn" 
+                    [class.active]="filterType === 'all'"
+                    (click)="changeFilter('all')">
+              Tất cả
+            </button>
+            <button class="filter-btn" 
+                    [class.active]="filterType === 'my'"
+                    (click)="changeFilter('my')">
+              Của tôi
+            </button>
+            <button class="filter-btn" 
+                    [class.active]="filterType === 'public'"
+                    (click)="changeFilter('public')">
+              Công khai
+            </button>
+            <button class="filter-btn" 
+                    [class.active]="filterType === 'private'"
+                    (click)="changeFilter('private')">
+              Riêng tư
+            </button>
+          </div>
+          
+          <div class="search-box">
+            <input type="text" 
+                   [(ngModel)]="searchTerm" 
+                   (input)="onSearch()" 
+                   placeholder="Tìm kiếm thảo luận...">
+            <i class="fas fa-search"></i>
+          </div>
+        </div>
+
+        <!-- Discussion Items -->
+        <div class="discussion-items" *ngIf="!loading">
+          <div class="discussion-item" 
+               *ngFor="let discussion of filteredDiscussions; trackBy: trackDiscussionById"
+               (click)="viewDiscussion(discussion)">
+            
+            <div class="discussion-main">
+              <div class="discussion-info">
+                <div class="discussion-title">
+                  <h3>{{ discussion.title }}</h3>
+                  <div class="discussion-badges">
+                    <span class="badge" 
+                          [class.badge-public]="discussion.type === 'PUBLIC'"
+                          [class.badge-private]="discussion.type === 'PRIVATE'">
+                      {{ discussion.type === 'PUBLIC' ? 'Công khai' : 'Riêng tư' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="discussion-content">
+                  {{ discussion.content | slice:0:150 }}
+                  <span *ngIf="discussion.content.length > 150">...</span>
+                </div>
+                
+                <!-- File Attachment Indicator -->
+                <div class="file-attachment-indicator" *ngIf="discussion.attachmentName">
+                  <i class="fas fa-paperclip"></i>
+                  <span class="attachment-name">{{ discussion.attachmentName }}</span>
+                </div>
+                
+                <div class="discussion-meta">
+                  <div class="author-info">
+                    <i class="fas fa-user"></i>
+                    {{ discussion.authorName }} 
+                    <span class="role">({{ getDisplayRole(discussion.authorRole || '') }})</span>
+                    <span *ngIf="discussion.type === 'PRIVATE' && discussion.targetUserName">
+                      <i class="fas fa-arrow-right"></i> {{ discussion.targetUserName }}
+                    </span>
+                  </div>
+                  
+                  <div class="discussion-stats">
+                    <span class="reply-count">
+                      <i class="fas fa-reply"></i> 
+                      <span *ngIf="discussion.unreadRepliesCount && discussion.unreadRepliesCount > 0; else allRead">
+                        {{ discussion.totalRepliesCount || 0 }} trả lời 
+                        (<span class="unread-count">{{ discussion.unreadRepliesCount }} chưa đọc</span>)
+                      </span>
+                      <ng-template #allRead>
+                        {{ discussion.totalRepliesCount || 0 }} trả lời
+                        <span *ngIf="discussion.totalRepliesCount && discussion.totalRepliesCount > 0" class="read-all">
+                          (đã đọc hết)
+                        </span>
+                      </ng-template>
+                    </span>
+                    <span class="created-date">
+                      <i class="fas fa-clock"></i> {{ formatDate(discussion.createdAt || '') }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Discussion Actions -->
+              <div class="discussion-actions" *ngIf="canDelete(discussion)">
+                <button class="action-btn danger" 
+                        (click)="deleteDiscussion(discussion); $event.stopPropagation()"
+                        title="Xóa thảo luận">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="filteredDiscussions.length === 0">
+            <i class="fas fa-comments"></i>
+            <h3>Chưa có thảo luận nào</h3>
+            <p>Hãy tạo thảo luận đầu tiên để bắt đầu tương tác với lớp học!</p>
+            <button class="btn btn-primary" (click)="showCreateForm()">
+              <i class="fas fa-plus"></i> Tạo thảo luận mới
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div class="loading-state" *ngIf="loading">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Đang tải thảo luận...</p>
+        </div>
+      </div>
+
+      <!-- Create Discussion View -->
+      <div class="create-discussion" *ngIf="currentView === 'create'">
+        <div class="create-header">
+          <h2><i class="fas fa-plus"></i> Tạo thảo luận mới</h2>
+          <button class="btn btn-secondary" (click)="backToList()">
+            <i class="fas fa-arrow-left"></i> Quay lại
+          </button>
+        </div>
+
+        <form (ngSubmit)="createDiscussion()" class="discussion-form">
+          <!-- Discussion Type -->
+          <div class="form-group">
+            <label>Loại thảo luận:</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" 
+                       name="discussionType" 
+                       value="PUBLIC" 
+                       (change)="onTypeChange('PUBLIC')"
+                       [checked]="newDiscussion.type === 'PUBLIC'">
+                <span class="radio-text">Công khai (Tất cả thành viên lớp)</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" 
+                       name="discussionType" 
+                       value="PRIVATE" 
+                       (change)="onTypeChange('PRIVATE')"
+                       [checked]="newDiscussion.type === 'PRIVATE'"
+                       [disabled]="!isInstructorRole() && !courseInstructor">
+                <span *ngIf="isInstructorRole()" class="radio-text">Riêng tư (Gửi cho một sinh viên cụ thể)</span>
+                <span *ngIf="!isInstructorRole() && courseInstructor" class="radio-text">Riêng tư (Gửi cho giảng viên)</span>
+                <span *ngIf="!isInstructorRole() && !courseInstructor" class="radio-text text-muted">Riêng tư (Chưa có giảng viên)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Target User (for private discussions) -->
+          <!-- For Instructors: Select from students -->
+          <div class="form-group" *ngIf="newDiscussion.type === 'PRIVATE' && isInstructorRole()">>
+            <div class="label-with-info">
+              <label for="targetUser">Gửi đến sinh viên:</label>
+              <div class="member-info">
+                <span class="member-count">{{ courseMembers.length }} sinh viên</span>
+                <button type="button" 
+                        class="btn-reload" 
+                        (click)="reloadCourseMembers()"
+                        title="Tải lại danh sách sinh viên">
+                  <i class="fas fa-sync"></i>
+                </button>
+              </div>
+            </div>
+            <select id="targetUser" 
+                    name="targetUser" 
+                    [(ngModel)]="newDiscussion.targetUserId" 
+                    class="form-control">
+              <option [ngValue]="null">
+                {{ courseMembers.length === 0 ? 'Đang tải sinh viên...' : 'Chọn sinh viên...' }}
+              </option>
+              <option *ngFor="let member of courseMembers" [ngValue]="member.userId">
+                {{ member.fullName }} ({{ getDisplayRole(member.role) }})
+              </option>
+            </select>
+            <small class="form-text text-muted" *ngIf="courseMembers.length === 0">
+              Không tìm thấy sinh viên. Hãy thử tải lại.
+            </small>
+          </div>
+
+          <!-- For Students: Auto-select instructor -->
+                    <!-- For Students: Show instructor info -->
+          <div class="form-group" *ngIf="newDiscussion.type === 'PRIVATE' && !isInstructorRole()">
+            <label>Gửi đến:</label>
+            <div class="instructor-info" *ngIf="courseInstructor">
+              <div class="instructor-card">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>{{ courseInstructor.fullName }} (Giảng viên)</span>
+              </div>
+            </div>
+            <div class="no-instructor" *ngIf="!courseInstructor">
+              <p>Khóa học này chưa có giảng viên được phân công.</p>
+              <button type="button" 
+                      class="btn-reload" 
+                      (click)="loadCourseInstructor()">
+                <i class="fas fa-sync"></i> Tải lại
+              </button>
+            </div>
+          </div>
+
+          <!-- Discussion Title -->
+          <div class="form-group">
+            <label for="discussionTitle">Tiêu đề:</label>
+            <input type="text" 
+                   id="discussionTitle" 
+                   name="discussionTitle" 
+                   [(ngModel)]="newDiscussion.title" 
+                   class="form-control" 
+                   placeholder="Nhập tiêu đề thảo luận..." 
+                   required>
+          </div>
+
+          <!-- Discussion Content -->
+          <div class="form-group">
+            <label for="discussionContent">Nội dung:</label>
+            <div class="rich-textarea-container">
+              <div class="editor-toolbar">
+                <div class="toolbar-group">
+                  <button type="button" class="format-btn" (click)="formatText('bold')" title="In đậm">
+                    <i class="fas fa-bold"></i>
+                  </button>
+                  <button type="button" class="format-btn" (click)="formatText('italic')" title="In nghiêng">
+                    <i class="fas fa-italic"></i>
+                  </button>
+                  <button type="button" class="format-btn" (click)="formatText('underline')" title="Gạch chân">
+                    <i class="fas fa-underline"></i>
+                  </button>
+                </div>
+                <div class="toolbar-separator"></div>
+                <div class="toolbar-group">
+                  <button type="button" class="format-btn" (click)="formatText('bulletList')" title="Danh sách">
+                    <i class="fas fa-list-ul"></i>
+                  </button>
+                  <button type="button" class="format-btn" (click)="formatText('numberList')" title="Danh sách số">
+                    <i class="fas fa-list-ol"></i>
+                  </button>
+                </div>
+                <div class="toolbar-separator"></div>
+                <div class="toolbar-group">
+                  <button type="button" class="format-btn link-btn" (click)="formatText('link')" title="Tạo liên kết">
+                    <i class="fas fa-link"></i>
+                    <span>Link</span>
+                  </button>
+                  <button type="button" class="format-btn" (click)="triggerFileUpload()" title="Upload file">
+                    <i class="fas fa-upload"></i>
+                  </button>
+                </div>
+                <div class="toolbar-separator"></div>
+                <div class="toolbar-group history-controls">
+                  <button type="button" 
+                          class="format-btn" 
+                          [disabled]="!canNavigateBack()"
+                          (click)="navigateHistoryBack('create')" 
+                          title="Quay lại lịch sử">
+                    <i class="fas fa-undo"></i>
+                  </button>
+                  <button type="button" 
+                          class="format-btn" 
+                          [disabled]="!canNavigateForward()"
+                          (click)="navigateHistoryForward('create')" 
+                          title="Tiếp theo lịch sử">
+                    <i class="fas fa-redo"></i>
+                  </button>
+                </div>
+              </div>
+              <textarea id="discussionContent" 
+                        name="discussionContent" 
+                        [(ngModel)]="newDiscussion.content" 
+                        (ngModelChange)="onTextChange($event)"
+                        (input)="onTextInput($event)"
+                        (keydown)="onKeyDown($event)"
+                        class="rich-textarea" 
+                        rows="6" 
+                        placeholder="Nhập nội dung thảo luận... Sử dụng thanh công cụ để định dạng văn bản hoặc tạo liên kết. Nhấn Enter để xuống dòng." 
+                        required></textarea>
+              <div class="format-help">
+                <small><i class="fas fa-info-circle"></i> 
+                  Mẹo: Chọn văn bản rồi nhấn nút định dạng, hoặc sử dụng nút quay lại/tiếp theo để duyệt lịch sử
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden file input for upload functionality -->
+          <input type="file" 
+                 id="fileUpload" 
+                 class="file-input" 
+                 style="display: none;"
+                 (change)="onFileSelected($event)"
+                 accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp">
+
+          <!-- File Upload - Only show when file is selected -->
+          <div class="form-group" *ngIf="selectedFile">
+            <label>File đã chọn:</label>
+            <div class="file-upload-container file-selected">
+              <!-- File selected info -->
+              <div class="file-info">
+                <i class="fas fa-file-alt"></i>
+                <div class="file-details">
+                  <div class="file-name">{{ selectedFile.name }}</div>
+                  <div class="file-size">{{ formatFileSize(selectedFile.size) }}</div>
+                </div>
+                <button type="button" 
+                        class="remove-file" 
+                        (click)="removeSelectedFile()"
+                        title="Xóa file">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="backToList()">
+              Hủy
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary" 
+                    [disabled]="submitting">
+              <i class="fas fa-spinner fa-spin" *ngIf="submitting"></i>
+              {{ submitting ? 'Đang tạo...' : 'Tạo thảo luận' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Discussion Detail View -->
+      <div class="discussion-detail" 
+           #discussionDetail
+           (scroll)="onScroll($event)"
+           *ngIf="currentView === 'detail' && selectedDiscussion">
+        <div class="detail-header">
+          <button class="btn btn-secondary" (click)="backToList()">
+            <i class="fas fa-arrow-left"></i> Quay lại
+          </button>
+          
+          <div class="discussion-actions" *ngIf="canDelete(selectedDiscussion)">
+            <button class="btn btn-danger" 
+                    (click)="deleteDiscussion(selectedDiscussion)">
+              <i class="fas fa-trash"></i> Xóa
+            </button>
+          </div>
+        </div>
+
+        <!-- Discussion Content -->
+        <div class="discussion-detail-content">
+          <div class="discussion-header-info">
+            <h2>{{ selectedDiscussion.title }}</h2>
+            <div class="discussion-badges">
+              <span class="badge" 
+                    [class.badge-public]="selectedDiscussion.type === 'PUBLIC'"
+                    [class.badge-private]="selectedDiscussion.type === 'PRIVATE'">
+                {{ selectedDiscussion.type === 'PUBLIC' ? 'Công khai' : 'Riêng tư' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="discussion-main-content">
+            <div class="author-info">
+              <i class="fas fa-user"></i>
+              {{ selectedDiscussion.authorName }} 
+              <span class="role">({{ getDisplayRole(selectedDiscussion.authorRole || '') }})</span>
+              <span class="date">- {{ formatDate(selectedDiscussion.createdAt || '') }}</span>
+              <span *ngIf="selectedDiscussion.type === 'PRIVATE' && selectedDiscussion.targetUserName">
+                <i class="fas fa-arrow-right"></i> {{ selectedDiscussion.targetUserName }}
+              </span>
+            </div>
+            
+            <div class="discussion-content" [innerHTML]="selectedDiscussion.content">
+            </div>
+            
+            <!-- File Attachment -->
+            <div class="file-attachment" *ngIf="selectedDiscussion.attachmentName">
+              <div class="attachment-header">
+                <i class="fas fa-paperclip"></i>
+                <span>Tệp đính kèm:</span>
+              </div>
+              <div class="attachment-item">
+                <i class="fas fa-file"></i>
+                <a [href]="selectedDiscussion.attachmentUrl" 
+                   target="_blank" 
+                   class="attachment-link">
+                  {{ selectedDiscussion.attachmentName }}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reply Button (moved up here after discussion content) -->
+        <div class="quick-reply-section">
+          <div class="reply-trigger" *ngIf="!showMainReplyForm">
+            <button type="button" 
+                    class="btn btn-primary btn-lg quick-reply-btn"
+                    (click)="showReplyForm()">
+              <i class="fas fa-reply"></i> Trả lời thảo luận này
+            </button>
+          </div>
+        </div>
+
+        <!-- Rich Reply Form (shown when reply button is clicked) -->
+        <div class="main-reply-form" *ngIf="showMainReplyForm">
+          <form (ngSubmit)="submitReply()">
+            <!-- Reply Text Editor -->
+            <div class="form-group">
+              <label for="replyContent">Nội dung trả lời:</label>
+              <div class="rich-textarea-container">
+                <div class="editor-toolbar">
+                  <div class="toolbar-group">
+                    <button type="button" class="format-btn" (click)="formatText('bold', 'reply')" title="In đậm">
+                      <i class="fas fa-bold"></i>
+                    </button>
+                    <button type="button" class="format-btn" (click)="formatText('italic', 'reply')" title="In nghiêng">
+                      <i class="fas fa-italic"></i>
+                    </button>
+                    <button type="button" class="format-btn" (click)="formatText('underline', 'reply')" title="Gạch chân">
+                      <i class="fas fa-underline"></i>
+                    </button>
+                  </div>
+                  <div class="toolbar-separator"></div>
+                  <div class="toolbar-group">
+                    <button type="button" class="format-btn" (click)="formatText('bulletList', 'reply')" title="Danh sách">
+                      <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button type="button" class="format-btn" (click)="formatText('numberList', 'reply')" title="Danh sách số">
+                      <i class="fas fa-list-ol"></i>
+                    </button>
+                  </div>
+                  <div class="toolbar-separator"></div>
+                  <div class="toolbar-group">
+                    <button type="button" class="format-btn link-btn" (click)="formatText('link', 'reply')" title="Tạo liên kết">
+                      <i class="fas fa-link"></i>
+                    </button>
+                    
+                    <button type="button" class="format-btn" (click)="triggerFileUpload('reply')" title="Upload file">
+                      <i class="fas fa-upload"></i>
+                    </button>
+                  </div>
+                  <div class="toolbar-separator"></div>
+                  <div class="toolbar-group history-controls">
+                    <button type="button" 
+                            class="format-btn" 
+                            [disabled]="!canNavigateBack()"
+                            (click)="navigateHistoryBack('reply')" 
+                            title="Quay lại lịch sử">
+                      <i class="fas fa-undo"></i>
+                    </button>
+                    <button type="button" 
+                            class="format-btn" 
+                            [disabled]="!canNavigateForward()"
+                            (click)="navigateHistoryForward('reply')" 
+                            title="Tiếp theo lịch sử">
+                      <i class="fas fa-redo"></i>
+                    </button>
+                  </div>
+                </div>
+                <textarea [(ngModel)]="replyContent" 
+                          (ngModelChange)="onTextChange($event, 'reply')"
+                          (input)="onTextInput($event, 'reply')"
+                          (keydown)="onKeyDown($event, 'reply')"
+                          name="replyContent" 
+                          id="replyContent"
+                          class="rich-textarea"
+                          placeholder="Nhập nội dung trả lời... Sử dụng thanh công cụ để định dạng văn bản hoặc tạo liên kết. Nhấn Enter để xuống dòng."
+                          rows="6"></textarea>
+                <div class="format-help">
+                  <small><i class="fas fa-info-circle"></i> 
+                    Mẹo: Chọn văn bản rồi nhấn nút định dạng, hoặc sử dụng nút quay lại/tiếp theo để duyệt lịch sử
+                  </small>
+                </div>
+              </div>
+              
+              <!-- File Upload Section (hidden initially) -->
+              <div class="file-upload-section" *ngIf="selectedReplyFile">
+                <div class="file-info">
+                  <i class="fas fa-paperclip"></i>
+                  <span>{{ selectedReplyFile.name }}</span>
+                  <button type="button" 
+                          class="btn-remove-file"
+                          (click)="removeSelectedReplyFile()"
+                          title="Xóa file">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Hidden file input -->
+              <input type="file" 
+                     #replyFileInput
+                     id="replyFileUpload" 
+                     class="file-input" 
+                     style="display: none;"
+                     (change)="onReplyFileSelected($event)"
+                     accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif">
+            </div>
+
+            <!-- Submit Actions -->
+            <div class="form-actions">
+              <button type="button" 
+                      class="btn btn-secondary"
+                      (click)="hideReplyForm()">
+                <i class="fas fa-times"></i> Hủy
+              </button>
+              <button type="submit" 
+                      class="btn btn-primary submit-reply" 
+                      [disabled]="isInvalidReply() || submitting">
+                <i class="fas fa-spinner fa-spin" *ngIf="submitting"></i>
+                <i class="fas fa-reply" *ngIf="!submitting"></i>
+                {{ submitting ? 'Đang gửi...' : 'Gửi trả lời' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Replies Section -->
+        <div class="replies-section">
+        <div class="replies-section">
+          <h3><i class="fas fa-reply"></i> Trả lời ({{ discussionReplies.length }})</h3>
+          
+          <!-- Loading replies -->
+          <div class="loading-state" *ngIf="loadingReplies">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải trả lời...</p>
+          </div>
+
+          <!-- Reply List -->
+          <div class="reply-list" *ngIf="!loadingReplies">
+            <!-- Only show root replies (those without parentReplyId) -->
+            <div class="reply-item" *ngFor="let reply of getRootReplies()">
+              <div class="reply-header">
+                <div class="reply-author">
+                  <i class="fas fa-user"></i>
+                  {{ reply.userName }} 
+                  <span class="role">({{ getDisplayRole(reply.userRole || '') }})</span>
+                  <span class="date">- {{ formatDate(reply.createdAt || '') }}</span>
+                </div>
+                
+                <!-- Reply Actions -->
+                <div class="reply-actions">
+                  <!-- Reply to this reply button -->
+                  <button class="action-btn secondary small" 
+                          (click)="toggleNestedReply(reply.replyId!)"
+                          title="Trả lời">
+                    <i class="fas fa-reply"></i>
+                  </button>
+                  
+                  <!-- Delete button for own replies -->
+                  <button class="action-btn danger small" 
+                          *ngIf="canDeleteReply(reply)"
+                          (click)="deleteReply(reply)"
+                          title="Xóa trả lời">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="reply-content" [innerHTML]="reply.content">
+              </div>
+
+              <!-- Reply File Attachment -->
+              <div class="file-attachment" *ngIf="reply.attachmentName">
+                <div class="attachment-item">
+                  <i class="fas fa-paperclip"></i>
+                  <a [href]="reply.attachmentUrl" 
+                     target="_blank" 
+                     class="attachment-link">
+                    {{ reply.attachmentName }}
+                  </a>
+                </div>
+              </div>
+
+              <!-- Nested Reply Form -->
+              <div class="nested-reply-form" *ngIf="activeNestedReply === reply.replyId">
+                <div class="nested-form-container">
+                  <h5><i class="fas fa-reply"></i> Trả lời {{ reply.userName }}</h5>
+                  <div class="form-group">
+                    <div class="rich-textarea-container nested">
+                      <div class="editor-toolbar nested">
+                        <div class="toolbar-group">
+                          <button type="button" class="format-btn small" (click)="formatText('bold', 'nested-' + reply.replyId)" title="In đậm">
+                            <i class="fas fa-bold"></i>
+                          </button>
+                          <button type="button" class="format-btn small" (click)="formatText('italic', 'nested-' + reply.replyId)" title="In nghiêng">
+                            <i class="fas fa-italic"></i>
+                          </button>
+                          <button type="button" class="format-btn small" (click)="formatText('underline', 'nested-' + reply.replyId)" title="Gạch chân">
+                            <i class="fas fa-underline"></i>
+                          </button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                          <button type="button" class="format-btn small" (click)="formatText('bulletList', 'nested-' + reply.replyId)" title="Danh sách">
+                            <i class="fas fa-list-ul"></i>
+                          </button>
+                          <button type="button" class="format-btn small" (click)="formatText('numberedList', 'nested-' + reply.replyId)" title="Danh sách số">
+                            <i class="fas fa-list-ol"></i>
+                          </button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group">
+                          <button type="button" class="format-btn small" (click)="createLinkInNested(reply.replyId!)" title="Tạo liên kết">
+                            <i class="fas fa-link"></i>
+                          </button>
+                          <button type="button" class="format-btn small" (click)="triggerNestedFileUpload(reply.replyId!)" title="Upload file">
+                            <i class="fas fa-upload"></i>
+                          </button>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-group history-controls">
+                          <button type="button" 
+                                  class="format-btn small" 
+                                  [disabled]="!canNavigateBackNested(reply.replyId!)"
+                                  (click)="navigateHistoryBackNested(reply.replyId!)" 
+                                  title="Quay lại lịch sử">
+                            <i class="fas fa-undo"></i>
+                          </button>
+                          <button type="button" 
+                                  class="format-btn small" 
+                                  [disabled]="!canNavigateForwardNested(reply.replyId!)"
+                                  (click)="navigateHistoryForwardNested(reply.replyId!)" 
+                                  title="Tiếp theo lịch sử">
+                            <i class="fas fa-redo"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <textarea [(ngModel)]="nestedReplyContent[reply.replyId!]" 
+                                (ngModelChange)="onNestedTextChange($event, reply.replyId!)"
+                                (input)="onNestedTextInput($event, reply.replyId!)"
+                                (keydown)="onKeyDown($event, 'nested-' + reply.replyId)"
+                                name="nestedReply{{ reply.replyId }}"
+                                class="rich-textarea nested"
+                                placeholder="Nhập nội dung trả lời cho {{ reply.userName }}... Sử dụng thanh công cụ để định dạng văn bản hoặc tạo liên kết. Nhấn Enter để xuống dòng."
+                                rows="5"></textarea>
+                      <div class="format-help">
+                        <small><i class="fas fa-info-circle"></i> 
+                          Mẹo: Chọn văn bản rồi nhấn nút định dạng, hoặc sử dụng nút quay lại/tiếp theo để duyệt lịch sử
+                        </small>
+                      </div>
+                    </div>
+                    
+                    <!-- Nested File Upload Section (hidden initially) -->
+                    <div class="file-upload-section nested" *ngIf="nestedSelectedFiles[reply.replyId!]">
+                      <div class="file-info">
+                        <i class="fas fa-paperclip"></i>
+                        <span>{{ nestedSelectedFiles[reply.replyId!].name }}</span>
+                        <button type="button" 
+                                class="btn-remove-file"
+                                (click)="removeNestedFile(reply.replyId!)"
+                                title="Xóa file">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Hidden file input for each nested reply -->
+                    <input type="file" 
+                           #nestedFileInput
+                           id="nestedFileUpload{{ reply.replyId }}" 
+                           class="file-input" 
+                           style="display: none;"
+                           (change)="onNestedFileSelect($event, reply.replyId!)"
+                           accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif">
+                  </div>
+                  <div class="nested-form-actions">
+                    <button type="button" 
+                            class="btn btn-primary btn-sm"
+                            (click)="submitNestedReply(reply.replyId!)"
+                            [disabled]="!nestedReplyContent[reply.replyId!] || !nestedReplyContent[reply.replyId!].trim()">
+                      <i class="fas fa-paper-plane"></i> Gửi
+                    </button>
+                    <button type="button" 
+                            class="btn btn-secondary btn-sm"
+                            (click)="cancelNestedReply(reply.replyId!)">
+                      <i class="fas fa-times"></i> Hủy
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nested Replies Display -->
+              <div class="nested-replies" *ngIf="getNestedReplies(reply.replyId!).length > 0">
+                <div class="nested-reply-item" *ngFor="let nestedReply of getNestedReplies(reply.replyId!)">
+                  <div class="nested-reply-header">
+                    <div class="nested-reply-author">
+                      <i class="fas fa-reply"></i>
+                      <i class="fas fa-user"></i>
+                      {{ nestedReply.userName }} 
+                      <span class="role">({{ getDisplayRole(nestedReply.userRole || '') }})</span>
+                      <span class="date">- {{ formatDate(nestedReply.createdAt || '') }}</span>
+                    </div>
+                    
+                    <!-- Nested Reply Actions -->
+                    <div class="nested-reply-actions" *ngIf="canDeleteReply(nestedReply)">
+                      <button class="action-btn danger small" 
+                              (click)="deleteReply(nestedReply)"
+                              title="Xóa trả lời">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="nested-reply-content" [innerHTML]="nestedReply.content">
+                  </div>
+
+                  <!-- Nested Reply File Attachment -->
+                  <div class="file-attachment" *ngIf="nestedReply.attachmentName">
+                    <div class="attachment-item">
+                      <i class="fas fa-paperclip"></i>
+                      <a [href]="nestedReply.attachmentUrl" 
+                         target="_blank" 
+                         class="attachment-link">
+                        {{ nestedReply.attachmentName }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty replies -->
+            <div class="empty-replies" *ngIf="getRootReplies().length === 0">
+              <p>Chưa có trả lời nào. Hãy là người đầu tiên trả lời!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+

@@ -1,0 +1,86 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="upload-container">
+      <h2>Upload Video Bài Giảng</h2>
+  <form (ngSubmit)="onSubmit()" #uploadForm="ngForm">
+    <div class="form-group">
+      <label for="title">Tên chương</label>
+      <input
+        type="text"
+        id="title"
+        name="title"
+        [(ngModel)]="title"
+        placeholder="VD: Math Chapter 11"
+        required />
+    </div>
+    <div class="form-group">
+      <label for="courseId">Khóa học</label>
+      <select
+        id="courseId"
+        name="courseId"
+        [(ngModel)]="courseId"
+        required
+        [disabled]="loading || courses.length === 0">
+        <option value="" disabled>
+          {{ loading ? 'Đang tải khóa học...' : (courses.length === 0 ? 'Không có khóa học nào' : 'Chọn khóa học') }}
+        </option>
+        <option *ngFor="let course of courses" [value]="course.courseId">
+          {{ course.title }} (ID: {{ course.courseId }})
+        </option>
+      </select>
+      <small *ngIf="courses.length === 0 && !loading" class="help-text">
+        Chỉ instructor mới có thể upload video cho khóa học của mình.
+      </small>
+    </div>
+    <div class="form-group">
+      <label for="description">Mô tả</label>
+      <textarea
+        id="description"
+        name="description"
+        [(ngModel)]="description"
+        placeholder="Mô tả nội dung video..."
+        rows="3"
+        required></textarea>
+    </div>
+    <div class="form-group">
+      <label for="video">Chọn video</label>
+      <input
+        type="file"
+        id="video"
+        name="video"
+        type="file" (change)="onFileSelected($event)"
+        accept="video/*"
+        required />
+    </div>
+    <button 
+      type="submit" 
+      class="submit-btn"
+      [disabled]="loading || !courseId || courses.length === 0">
+      {{ loading ? 'Đang tải lên...' : 'Tải lên' }}
+    </button>
+    <div class="success-message" *ngIf="successMessage">
+      ✅ Video đã được tải lên thành công! Bạn có thể tiếp tục upload video khác.
+    </div>
+  </form>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Component -->
+<app-notification></app-notification>

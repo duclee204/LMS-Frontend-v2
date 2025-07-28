@@ -1,0 +1,508 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav" *ngIf="courseInfo || courseId">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || ('Course ' + courseId) }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item">Tests</span>
+          <span class="breadcrumb-separator" *ngIf="examData">></span>
+          <span class="breadcrumb-item current-page" *ngIf="examData">{{ examData.title }}</span>
+        </nav>
+      </div>
+
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="right-content">
+          <div class="course-content">
+            
+            <!-- Pre-exam screen -->
+            <div *ngIf="examData && !isExamStarted && !isExamCompleted" class="pre-exam-screen">
+              <div class="exam-info-card">
+                <div class="exam-header">
+                  <h1>{{ examData.title }}</h1>
+                  <p *ngIf="examData.description" class="exam-description">{{ examData.description }}</p>
+                </div>
+
+                <div class="exam-details">
+                  <div class="detail-item">
+                    <i class="fas fa-question-circle"></i>
+                    <span>{{ examData.questions.length }} câu hỏi</span>
+                  </div>
+                  
+                  <div class="detail-item" *ngIf="examData.hasTimeLimit && examData.timeLimit">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ examData.timeLimit }} phút</span>
+                  </div>
+                  
+                  <div class="detail-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>{{ examData.quizType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}</span>
+                  </div>
+                </div>
+
+                <div class="exam-instructions">
+                  <h3>Hướng dẫn làm bài:</h3>
+                  <ul>
+                    <li>Đọc kỹ từng câu hỏi trước khi trả lời</li>
+                    <li>Bạn có thể chuyển qua lại giữa các câu hỏi</li>
+                    <li *ngIf="examData.hasTimeLimit">Có giới hạn thời gian, hãy sắp xếp thời gian hợp lý</li>
+                    <li>Nhấn "Nộp bài" khi hoàn thành</li>
+                    <li>Một khi đã nộp bài, bạn không thể chỉnh sửa</li>
+                  </ul>
+                </div>
+
+                <div class="exam-actions">
+                  <button class="btn cancel" (click)="navigateBackToExams()">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                  </button>
+                  <button class="btn start-exam" (click)="startExam()">
+                    <i class="fas fa-play"></i> Bắt đầu làm bài
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exam screen -->
+            <div *ngIf="examData && isExamStarted && !isExamCompleted" class="exam-screen">
+              
+              <!-- Exam header with timer -->
+              <div class="exam-progress-bar">
+                <div class="progress-info">
+                  <span class="question-counter">
+                    <span *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
+                      Câu {{ currentQuestionIndex + 1 }} / {{ examData.questions.length }}
+                    </span>
+                    <span *ngIf="examData.quizType === 'ESSAY'">
+                      Đề bài
+                    </span>
+                  </span>
+                  
+                  <div class="timer" *ngIf="examData.hasTimeLimit">
+                    <i class="fas fa-clock"></i>
+                    <span [class.warning]="timeRemaining < 300">{{ getFormattedTime() }}</span>
+                  </div>
+                </div>
+                
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    [style.width.%]="((currentQuestionIndex + 1) / examData.questions.length) * 100">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Question navigation - chỉ hiển thị khi không phải chế độ từng câu một -->
+              <div class="question-navigation" *ngIf="!showOneQuestionAtATime">
+                <div class="question-numbers">
+                  <button 
+                    *ngFor="let question of examData.questions; let i = index"
+                    class="question-number"
+                    [class.current]="i === currentQuestionIndex"
+                    [class.answered]="isQuestionAnswered(i)"
+                    (click)="goToQuestion(i)">
+                    {{ i + 1 }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Single question navigation - chỉ hiển thị khi chế độ từng câu một -->
+              <div class="single-question-nav" *ngIf="showOneQuestionAtATime">
+                <button 
+                  class="nav-btn prev" 
+                  [disabled]="currentQuestionIndex === 0"
+                  (click)="previousQuestion()">
+                  <i class="fas fa-chevron-left"></i> Câu trước
+                </button>
+                
+                <span class="question-indicator">
+                  <span *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
+                    Câu {{ currentQuestionIndex + 1 }} / {{ examData.questions.length }}
+                  </span>
+                  <span *ngIf="examData.quizType === 'ESSAY'">
+                    Đề bài
+                  </span>
+                </span>
+                
+                <button 
+                  class="nav-btn next" 
+                  [disabled]="currentQuestionIndex === examData.questions.length - 1"
+                  (click)="nextQuestion()">
+                  Câu tiếp <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+
+              <!-- Questions display -->
+              <div class="questions-container">
+                <!-- Single question mode -->
+                <div *ngIf="showOneQuestionAtATime && getCurrentQuestion() as currentQuestion" 
+                     class="single-question-mode">
+                  <div class="question-card">
+                    <div class="question-content">
+                      <h3 class="question-text">
+                        <span *ngIf="examData.quizType === 'MULTIPLE_CHOICE'" class="question-number-label">Câu {{ currentQuestionIndex + 1 }}:</span>
+                        {{ currentQuestion.questionText }}
+                      </h3>
+                      
+                      <!-- Question file attachment -->
+                      <div *ngIf="currentQuestion.questionFileUrl && currentQuestion.questionFileName" 
+                           class="question-attachment">
+                        <div class="attachment-info">
+                          <i class="fas fa-paperclip"></i>
+                          <span>File đính kèm:</span>
+                          <a [href]="getQuestionFileDownloadUrl(currentQuestion.questionFileUrl)" 
+                             target="_blank" 
+                             class="download-link">
+                            <i class="fas fa-download"></i>
+                            {{ currentQuestion.questionFileName }}
+                          </a>
+                        </div>
+                      </div>
+                      
+                      <div class="question-points">
+                        <i class="fas fa-star"></i>
+                        {{ currentQuestion.points }} điểm
+                      </div>
+                    </div>
+
+                    <!-- Multiple choice options -->
+                    <div *ngIf="currentQuestion.questionType === 'MULTIPLE_CHOICE'" class="answer-options">
+                      <div 
+                        *ngFor="let option of currentQuestion.options; let i = index"
+                        class="option-item"
+                        [class.selected]="isOptionSelected(currentQuestionIndex, i)"
+                        (click)="selectAnswer(currentQuestionIndex, i)">
+                        <input 
+                          type="radio" 
+                          [id]="'option_' + currentQuestionIndex + '_' + i"
+                          [name]="'question_' + currentQuestionIndex"
+                          [checked]="isOptionSelected(currentQuestionIndex, i)">
+                        <label [for]="'option_' + currentQuestionIndex + '_' + i">
+                          <span class="option-letter">{{ getOptionLetter(i) }}.</span>
+                          <span class="option-text">{{ option }}</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <!-- Essay answer for single question -->
+                    <div *ngIf="currentQuestion.questionType === 'ESSAY'" class="essay-answer">
+                      <!-- Essay content will be here -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Multiple questions mode (original) -->
+                <div *ngIf="!showOneQuestionAtATime" class="multiple-questions-mode">
+                  <!-- Current question -->
+                  <div class="question-container" *ngIf="getCurrentQuestion() as currentQuestion">
+                <div class="question-content">
+                  <h3 class="question-text">
+                    <span *ngIf="examData.quizType === 'MULTIPLE_CHOICE'" class="question-number-label">Câu {{ currentQuestionIndex + 1 }}:</span>
+                    {{ currentQuestion.questionText }}
+                  </h3>
+                  
+                  <!-- Question file attachment -->
+                  <div *ngIf="currentQuestion.questionFileUrl && currentQuestion.questionFileName" 
+                       class="question-attachment">
+                    <div class="attachment-info">
+                      <i class="fas fa-paperclip"></i>
+                      <span>File đính kèm:</span>
+                      <a [href]="getQuestionFileDownloadUrl(currentQuestion.questionFileUrl)" 
+                         target="_blank" 
+                         class="download-link">
+                        <i class="fas fa-download"></i>
+                        {{ currentQuestion.questionFileName }}
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div class="question-points">
+                    <i class="fas fa-star"></i>
+                    {{ currentQuestion.points }} điểm
+                  </div>
+                </div>
+
+                <!-- Multiple choice options -->
+                <div *ngIf="currentQuestion.questionType === 'MULTIPLE_CHOICE'" class="answer-options">
+                  <div 
+                    *ngFor="let option of currentQuestion.options; let i = index"
+                    class="option-item"
+                    [class.selected]="isOptionSelected(currentQuestionIndex, i)"
+                    (click)="selectAnswer(currentQuestionIndex, i)">
+                    <input 
+                      type="radio" 
+                      [id]="'option_' + currentQuestionIndex + '_' + i"
+                      [name]="'question_' + currentQuestionIndex"
+                      [checked]="isOptionSelected(currentQuestionIndex, i)">
+                    <label [for]="'option_' + currentQuestionIndex + '_' + i">
+                      <span class="option-letter">{{ getOptionLetter(i) }}.</span>
+                      <span class="option-text">{{ option }}</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Essay answer -->
+                <div *ngIf="currentQuestion.questionType === 'ESSAY'" class="essay-answer">
+                  <div class="essay-options">
+                    <div class="option-tabs">
+                      <button 
+                        type="button"
+                        [class.active]="currentQuestion.essaySubmissionType === 'text'"
+                        (click)="setEssaySubmissionType('text')">
+                        <i class="fas fa-edit"></i> Văn bản
+                      </button>
+                      <button 
+                        type="button"
+                        [class.active]="currentQuestion.essaySubmissionType === 'file'"
+                        (click)="setEssaySubmissionType('file')">
+                        <i class="fas fa-file-upload"></i> File
+                      </button>
+                      <button 
+                        type="button"
+                        [class.active]="currentQuestion.essaySubmissionType === 'link'"
+                        (click)="setEssaySubmissionType('link')">
+                        <i class="fas fa-link"></i> Liên kết
+                      </button>
+                    </div>
+
+                    <!-- Text submission -->
+                    <div *ngIf="currentQuestion.essaySubmissionType === 'text'" class="text-submission">
+                      <textarea 
+                        [(ngModel)]="currentQuestion.essayAnswer"
+                        placeholder="Nhập câu trả lời của bạn..."
+                        rows="10">
+                      </textarea>
+                      <div class="character-count" *ngIf="currentQuestion.essayAnswer">
+                        {{ currentQuestion.essayAnswer.length }} ký tự
+                      </div>
+                    </div>
+
+                    <!-- File submission -->
+                    <div *ngIf="currentQuestion.essaySubmissionType === 'file'" class="file-submission">
+                      <div class="file-upload-area" 
+                           [class.has-file]="currentQuestion.selectedFile"
+                           (click)="fileInput.click()">
+                        <input #fileInput type="file" 
+                               (change)="onFileSelected($event)"
+                               accept=".pdf,.doc,.docx,.txt,.jpg,.png"
+                               style="display: none;">
+                        
+                        <div *ngIf="!currentQuestion.selectedFile" class="upload-placeholder">
+                          <i class="fas fa-cloud-upload-alt"></i>
+                          <p>Nhấp để chọn file hoặc kéo thả file vào đây</p>
+                          <small>Hỗ trợ: PDF, DOC, DOCX, TXT, JPG, PNG (tối đa 10MB)</small>
+                        </div>
+
+                        <div *ngIf="currentQuestion.selectedFile" class="file-info">
+                          <i class="fas fa-file-alt"></i>
+                          <div class="file-details">
+                            <p class="file-name">{{ currentQuestion.selectedFile.name }}</p>
+                            <p class="file-size">{{ formatFileSize(currentQuestion.selectedFile.size) }}</p>
+                          </div>
+                          <button type="button" class="remove-file" (click)="removeFile($event)">
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Link submission -->
+                    <div *ngIf="currentQuestion.essaySubmissionType === 'link'" class="link-submission">
+                      <input 
+                        type="url" 
+                        [(ngModel)]="currentQuestion.essayLinkAnswer"
+                        placeholder="Nhập liên kết (https://...)"
+                        class="link-input">
+                      <small class="hint">Ví dụ: https://drive.google.com/file/d/..., https://github.com/...</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                </div> <!-- End multiple-questions-mode -->
+              </div> <!-- End questions-container -->
+
+              <!-- Navigation buttons -->
+              <div class="question-actions">
+                <button 
+                  class="btn previous" 
+                  (click)="previousQuestion()"
+                  [disabled]="currentQuestionIndex === 0">
+                  <i class="fas fa-chevron-left"></i> Câu trước
+                </button>
+
+                <button 
+                  class="btn next" 
+                  (click)="nextQuestion()"
+                  *ngIf="currentQuestionIndex < examData.questions.length - 1">
+                  Câu tiếp <i class="fas fa-chevron-right"></i>
+                </button>
+
+                <button 
+                  class="btn submit-exam" 
+                  (click)="submitExam()"
+                  *ngIf="currentQuestionIndex === examData.questions.length - 1">
+                  <i class="fas fa-check"></i> Nộp bài
+                </button>
+              </div>
+
+              <!-- Submit confirmation -->
+              <div class="submit-section">
+                <button class="btn cancel-exam" (click)="cancelExam()">
+                  <i class="fas fa-times"></i> Hủy bài thi
+                </button>
+                
+                <button class="btn submit-exam-final" (click)="submitExam()">
+                  <i class="fas fa-paper-plane"></i> Nộp bài ngay
+                </button>
+              </div>
+            </div>
+
+            <!-- Post-exam screen -->
+            <div *ngIf="isExamCompleted" class="post-exam-screen">
+              <div class="completion-card">
+                <div class="completion-icon">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                
+                <h1>Hoàn thành bài thi!</h1>
+                
+                <!-- Show result for multiple choice immediately -->
+                <div *ngIf="examResult && examData?.quizType === 'MULTIPLE_CHOICE'" class="exam-result">
+                  <div class="result-summary">
+                    <h2>Kết quả bài thi</h2>
+                    <div class="score-display">
+                      <div class="score-circle">
+                        <span class="score-number">{{ getPercentageScore().toFixed(1) }}%</span>
+                      </div>
+                      <div class="score-details">
+                        <p><strong>Điểm số:</strong> {{ getEarnedPoints() }} / {{ getTotalPoints() }}</p>
+                        <p><strong>Số câu đúng:</strong> {{ getCorrectAnswersCount() }} / {{ getTotalQuestionsCount() }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Question review -->
+                  <div class="question-review">
+                    <h3>Xem lại đáp án</h3>
+                    <div *ngFor="let questionResult of examResult.questionResults; let i = index" 
+                         class="question-review-item">
+                      <div class="question-header">
+                        <span *ngIf="examData && examData.quizType === 'MULTIPLE_CHOICE'" class="question-number">Câu {{ i + 1 }}</span>
+                        <span *ngIf="examData && examData.quizType === 'ESSAY'" class="question-number">Đề bài</span>
+                        <span class="question-status" 
+                              [class.correct]="questionResult.correct"
+                              [class.incorrect]="!questionResult.correct">
+                          <i class="fas" [class.fa-check]="questionResult.correct" 
+                             [class.fa-times]="!questionResult.correct"></i>
+                          {{ questionResult.correct ? 'Đúng' : 'Sai' }}
+                        </span>
+                      </div>
+                      
+                      <div class="question-content">
+                        <p class="question-text">{{ questionResult.questionText }}</p>
+                        <div class="answer-comparison">
+                          <div class="user-answer">
+                            <strong>Câu trả lời của bạn:</strong>
+                            <span [class.incorrect]="!questionResult.correct">
+                              {{ questionResult.userAnswer || 'Chưa trả lời' }}
+                            </span>
+                          </div>
+                          <div class="correct-answer" *ngIf="!questionResult.correct">
+                            <strong>Đáp án đúng:</strong>
+                            <span class="correct">{{ questionResult.correctAnswer }}</span>
+                          </div>
+                        </div>
+                        <div class="question-points">
+                          <strong>Điểm:</strong> {{ questionResult.correct ? questionResult.points : 0 }} / {{ questionResult.points }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Message for essay questions -->
+                <div *ngIf="!examResult || examData?.quizType === 'ESSAY'" class="essay-message">
+                  <p>Bạn đã nộp bài thành công. Kết quả sẽ được công bố sau khi giảng viên chấm bài.</p>
+                </div>
+
+                <!-- Warning message for completed exam -->
+                <div *ngIf="hasSubmitted" class="warning-message">
+                  <i class="fas fa-info-circle"></i>
+                  <p>Bạn đã hoàn thành bài thi này. Không thể làm lại.</p>
+                </div>
+
+                <div class="completion-actions">
+                  <button class="btn primary" (click)="navigateBackToExams()">
+                    <i class="fas fa-arrow-left"></i> Quay lại danh sách bài thi
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading screen -->
+            <div *ngIf="isLoading && !examData && !isExamCompleted" class="loading-screen">
+              <div class="loading-content">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang tải bài thi...</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,239 @@
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav" *ngIf="courseInfo || courseId">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || ('Course ' + courseId) }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item">Tests</span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item">{{ quizTitle }}</span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item current-page">Add Question</span>
+        </nav>
+      </div>
+
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="right-content">
+          <div class="course-content">
+            <div class="question-form-container">
+              <div class="question-header">
+                <h2>Tạo câu hỏi {{ currentQuestionNumber }} - {{ questionData.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}</h2>
+                <div class="progress-info" *ngIf="totalQuestionsCreated > 0">
+                  <span class="badge">Đã tạo: {{ totalQuestionsCreated }} câu hỏi</span>
+                </div>
+              </div>
+
+              <form autocomplete="off" novalidate>
+                <!-- Question Text -->
+                <div class="form-group">
+                  <label for="question-text">Nội dung câu hỏi *</label>
+                  
+                  <!-- Rich text toolbar for essay questions -->
+                  <div class="rich-text-toolbar" *ngIf="questionData.questionType === 'ESSAY'">
+                    <div class="toolbar-group">
+                      <button type="button" class="toolbar-btn" (click)="formatText('bold')" title="Bold">
+                        <i class="fas fa-bold"></i>
+                      </button>
+                      <button type="button" class="toolbar-btn" (click)="formatText('italic')" title="Italic">
+                        <i class="fas fa-italic"></i>
+                      </button>
+                      <button type="button" class="toolbar-btn" (click)="formatText('underline')" title="Underline">
+                        <i class="fas fa-underline"></i>
+                      </button>
+                    </div>
+                    <div class="toolbar-group">
+                      <select class="font-size-select">
+                        <option value="12">12px</option>
+                        <option value="14" selected>14px</option>
+                        <option value="16">16px</option>
+                        <option value="18">18px</option>
+                        <option value="20">20px</option>
+                        <option value="24">24px</option>
+                      </select>
+                    </div>
+                    <div class="toolbar-group">
+                      <button type="button" class="toolbar-btn" title="Attach File" (click)="fileInput?.nativeElement.click()">
+                        <i class="fas fa-paperclip"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <textarea 
+                    #questionTextArea
+                    id="question-text" 
+                    name="questionText" 
+                    [(ngModel)]="questionData.questionText" 
+                    placeholder="Nhập nội dung câu hỏi..."
+                    [class]="questionData.questionType === 'ESSAY' ? 'rich-text-area' : 'simple-text-area'"
+                    rows="6"
+                    required>
+                  </textarea>
+
+                  <!-- File attachment for essay questions -->
+                  <div class="file-attachment" *ngIf="questionData.questionType === 'ESSAY'">
+                    <input 
+                      #fileInput
+                      type="file" 
+                      (change)="onFileSelected($event)"
+                      accept="image/*,.pdf,.doc,.docx"
+                      style="display: none;">
+                    
+                    <div class="attachment-info" *ngIf="selectedFile">
+                      <i class="fas fa-file"></i>
+                      <span>{{ selectedFile.name }}</span>
+                      <button type="button" class="remove-file" (click)="selectedFile = null">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Multiple Choice Options -->
+                <div class="form-group" *ngIf="questionData.questionType === 'MULTIPLE_CHOICE'">
+                  <label>Các lựa chọn *</label>
+                  <div class="options-container">
+                    <div class="option-item" *ngFor="let option of questionData.options; let i = index">
+                      <div class="option-input-group">
+                        <input 
+                          type="checkbox"
+                          [id]="'correct-' + i"
+                          [(ngModel)]="questionData.correctAnswers![i]"
+                          [name]="'correctAnswer' + i"
+                          class="correct-checkbox"
+                          title="Tích chọn để đánh dấu đây là đáp án đúng"
+                          [attr.aria-label]="'Đáp án đúng cho lựa chọn ' + (i + 1)">
+                        <i class="fas fa-check check-icon" [class.visible]="questionData.correctAnswers![i]"></i>
+                        
+                        <input 
+                          type="text"
+                          [(ngModel)]="questionData.options![i]"
+                          [name]="'option' + i"
+                          [placeholder]="'Lựa chọn ' + (i + 1)"
+                          class="option-input">
+                        
+                        <button 
+                          type="button" 
+                          class="remove-option-btn"
+                          (click)="removeOption(i)"
+                          [disabled]="questionData.options!.length <= 2"
+                          title="Xóa lựa chọn">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      type="button" 
+                      class="add-option-btn"
+                      (click)="addOption()"
+                      [disabled]="questionData.options!.length >= 6">
+                      <i class="fas fa-plus"></i> Thêm lựa chọn
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Points and Explanation -->
+                <div class="form-row">
+                  <div class="form-group half-width">
+                    <label for="points">Điểm *</label>
+                    <input 
+                      type="number"
+                      id="points"
+                      name="points"
+                      [(ngModel)]="questionData.points"
+                      min="0.5"
+                      max="100"
+                      step="0.5"
+                      required>
+                  </div>
+                  
+                  <div class="form-group half-width">
+                    <label for="explanation">Giải thích (tùy chọn)</label>
+                    <textarea 
+                      id="explanation"
+                      name="explanation"
+                      [(ngModel)]="questionData.explanation"
+                      placeholder="Giải thích đáp án..."
+                      rows="3">
+                    </textarea>
+                  </div>
+                </div>
+              </form>
+
+              <div class="buttons-container">
+                <button type="button" class="btn cancel" (click)="cancelQuestion()">Hủy</button>
+                <button 
+                  type="button" 
+                  class="btn save" 
+                  (click)="saveQuestion()" 
+                  [disabled]="!isFormValid() || isSaving">
+                  {{ isSaving ? 'Đang lưu...' : 'Lưu và hoàn thành' }}
+                </button>
+                <button 
+                  type="button" 
+                  class="btn save-continue" 
+                  (click)="saveAndContinue()" 
+                  [disabled]="!isFormValid() || isSaving">
+                  {{ isSaving ? 'Đang lưu...' : 'Lưu và tạo câu tiếp theo' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

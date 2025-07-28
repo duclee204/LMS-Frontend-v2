@@ -1,0 +1,72 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="header">
+      <h1>Quản lý danh mục khóa học</h1>
+      <p *ngIf="userRole">Vai trò: {{ userRole }}</p>
+      <div class="permission-notice" *ngIf="!isAdmin">
+        <p>⚠️ Bạn đang xem với quyền chỉ đọc. Chỉ admin mới có thể tạo/sửa/xóa danh mục.</p>
+      </div>
+    </div>
+
+  <div class="category-search-form">
+    <input [(ngModel)]="searchName" type="text" placeholder="Tìm kiếm theo tên" />
+    <input [(ngModel)]="searchDescription" type="text" placeholder="Tìm kiếm theo mô tả" />
+    <button (click)="fetchCategories()">Tìm kiếm</button>
+    <button *ngIf="isAdmin" (click)="showCreateForm = true">Tạo mới</button>
+  </div>
+
+  <!-- Form tạo mới / chỉnh sửa - chỉ hiển thị cho admin -->
+  <div class="category-create-form" *ngIf="showCreateForm && isAdmin">
+    <h3>{{ isEditing ? 'Chỉnh sửa' : 'Tạo mới' }} danh mục</h3>
+    <input [(ngModel)]="newCategory.name" type="text" placeholder="Tên danh mục" />
+    <input [(ngModel)]="newCategory.description" type="text" placeholder="Mô tả danh mục" />
+    <button (click)="submitCategory()">{{ isEditing ? 'Cập nhật' : 'Lưu' }}</button>
+    <button (click)="cancelCreate()">Hủy</button>
+    <!-- Nút xóa chỉ hiển thị khi đang chỉnh sửa -->
+    <button *ngIf="isEditing" (click)="deleteCategory()" class="delete-btn">Xóa</button>
+  </div>
+
+  <!-- Bảng danh sách danh mục -->
+  <table class="category-table" *ngIf="categories.length > 0">
+    <thead>
+      <tr>
+        <th>Tên danh mục</th>
+        <th>Mô tả</th>
+        <th *ngIf="isAdmin">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of categories">
+        <td>{{ c.name }}</td>
+        <td>{{ c.description }}</td>
+        <td *ngIf="isAdmin">
+          <button (click)="editCategory(c)">Chỉnh sửa</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="categories.length === 0" class="empty-state">
+    <p>Không tìm thấy danh mục nào.</p>
+  </div>
+  </div>
+</div>
+
+<!-- Notification Component -->
+<app-notification></app-notification>

@@ -1,0 +1,116 @@
+<div class="admin-dashboard-layout">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebaradmin></app-sidebaradmin>
+  </aside>
+  
+  <div class="admin-dashboard-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="admin-header">
+      <h1 class="admin-title">
+        🛡️ Admin Dashboard
+      </h1>
+      <p class="admin-subtitle" *ngIf="userName">
+        Xin chào, <strong>{{ userName }}</strong>
+        <span class="role-badge admin">
+          {{ userRole }}
+        </span>
+      </p>
+    </div>
+    
+    <div class="admin-stats">
+      <div class="admin-stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+          <h3>User Management</h3>
+          <p>Quản lý người dùng hệ thống</p>
+          <button class="nav-btn" onclick="window.location.href='/users'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+      
+      <div class="admin-stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-content">
+          <h3>Course Management</h3>
+          <p>Quản lý toàn bộ khóa học</p>
+          <button class="nav-btn" onclick="window.location.href='/course-management'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+      
+      <div class="admin-stat-card">
+        <div class="stat-icon">🏷️</div>
+        <div class="stat-content">
+          <h3>Category Management</h3>
+          <p>Quản lý danh mục khóa học</p>
+          <button class="nav-btn" onclick="window.location.href='/category'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+      
+      <div class="admin-stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <h3>Reports & Analytics</h3>
+          <p>Báo cáo và thống kê</p>
+          <button class="nav-btn" onclick="window.location.href='/reports'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+      
+      <div class="admin-stat-card">
+        <div class="stat-icon">⚙️</div>
+        <div class="stat-content">
+          <h3>System Settings</h3>
+          <p>Cấu hình hệ thống</p>
+          <button class="nav-btn" onclick="window.location.href='/settings'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+      
+      <div class="admin-stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-content">
+          <h3>System Logs</h3>
+          <p>Nhật ký hệ thống</p>
+          <button class="nav-btn" onclick="window.location.href='/Dashboard'">
+            Xem chi tiết
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="recent-activities">
+      <h2>Hoạt động gần đây</h2>
+      <div class="activity-list">
+        <div class="activity-item">
+          <span class="activity-time">2 phút trước</span>
+          <span class="activity-desc">Người dùng mới đăng ký: john&#64;example.com</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">15 phút trước</span>
+          <span class="activity-desc">Khóa học "Angular 18 Advanced" được tạo</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-time">1 giờ trước</span>
+          <span class="activity-desc">100 người dùng đang online</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

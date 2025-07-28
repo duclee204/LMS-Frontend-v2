@@ -1,0 +1,221 @@
+<app-notification></app-notification>
+<div class="courses-layout">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="courses-container">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="header">
+    <h1 class="title">
+      <span *ngIf="sessionService.isInstructor()">Khóa học của tôi</span>
+      <span *ngIf="sessionService.isStudent()">Khóa học</span>
+      <span *ngIf="sessionService.isAdmin()">Tổng quan khóa học</span>
+      <span *ngIf="!userRole">Danh sách khóa học</span>
+    </h1>
+    <p class="subtitle" *ngIf="userName">
+      Xin chào, {{ userName }}
+      <span *ngIf="sessionService.isInstructor()">(Giảng viên)</span>
+      <span *ngIf="sessionService.isStudent()">(Sinh viên)</span>
+      <span *ngIf="sessionService.isAdmin()">(Quản trị viên)</span>
+    </p>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Đang tải khóa học...</p>
+  </div>
+
+  <!-- Layout for Students: Two sections -->
+  <div *ngIf="!loading && sessionService.isStudent()" class="student-courses-layout">
+    
+    <!-- Section 1: My Courses (Enrolled) -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">📚 Khóa học của tôi</h2>
+        <span class="course-count">({{ enrolledCourses.length }} khóa học)</span>
+      </div>
+      
+      <div *ngIf="enrolledCourses.length === 0" class="empty-state">
+        <div class="empty-icon">🎓</div>
+        <h3>Bạn chưa đăng ký khóa học nào</h3>
+        <p>Hãy đăng ký một khóa học từ danh sách bên dưới để bắt đầu học!</p>
+      </div>
+
+      <div *ngIf="enrolledCourses.length > 0" class="courses-grid">
+        <div *ngFor="let course of enrolledCourses" 
+             class="course-card enrolled clickable" 
+             (click)="enterCourse(course)"
+             [style.cursor]="'pointer'"
+             [title]="'Bấm để vào học khóa học: ' + getCourseTitle(course)">
+          <div class="course-header">
+            <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
+              <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+                   [alt]="getCourseTitle(course)"
+                   class="thumbnail-image">
+            </div>
+            <div class="course-thumbnail placeholder" *ngIf="!course.thumbnailUrl">
+              <div class="placeholder-icon">📚</div>
+            </div>
+            
+            <div class="course-header-content">
+              <h3 class="course-title">{{ getCourseTitle(course) }}</h3>
+              <span class="enrollment-status enrolled">✅ Đã đăng ký</span>
+            </div>
+          </div>
+
+          <div class="course-info">
+            <p class="course-description">{{ getCourseDescription(course) }}</p>
+            <div class="course-meta">
+              <div class="meta-item" *ngIf="course.enrolledAt">
+                <span class="meta-label">Ngày đăng ký:</span>
+                <span class="meta-value">{{ formatDate(course.enrolledAt) }}</span>
+              </div>
+              <div class="meta-item" *ngIf="course.categoryName">
+                <span class="meta-label">Danh mục:</span>
+                <span class="meta-value">{{ course.categoryName }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Available Courses (Not Enrolled) -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">🌟 Khóa học có sẵn</h2>
+        <span class="course-count">({{ availableCourses.length }} khóa học)</span>
+      </div>
+
+      <div *ngIf="availableCourses.length === 0" class="empty-state">
+        <div class="empty-icon">📖</div>
+        <h3>Không có khóa học nào khác</h3>
+        <p>Hiện tại không có khóa học nào khác để đăng ký!</p>
+      </div>
+
+      <div *ngIf="availableCourses.length > 0" class="courses-grid">
+        <div *ngFor="let course of availableCourses" 
+             class="course-card not-enrolled clickable" 
+             (click)="enterCourse(course)"
+             [style.cursor]="'pointer'"
+             [title]="'Bấm để đăng ký khóa học: ' + getCourseTitle(course)">
+          <div class="course-header">
+            <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
+              <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+                   [alt]="getCourseTitle(course)"
+                   class="thumbnail-image">
+            </div>
+            <div class="course-thumbnail placeholder" *ngIf="!course.thumbnailUrl">
+              <div class="placeholder-icon">📚</div>
+            </div>
+            
+            <div class="course-header-content">
+              <h3 class="course-title">{{ getCourseTitle(course) }}</h3>
+              <span class="enrollment-status not-enrolled">🔓 Chưa đăng ký</span>
+            </div>
+          </div>
+
+          <div class="course-info">
+            <p class="course-description">{{ getCourseDescription(course) }}</p>
+            <div class="course-meta">
+              <div class="meta-item" *ngIf="getCoursePrice(course)">
+                <span class="meta-label">Giá:</span>
+                <span class="meta-value price">{{ formatPrice(getCoursePrice(course)) }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Ngày tạo:</span>
+                <span class="meta-value">{{ formatDate(getCourseCreatedDate(course)) }}</span>
+              </div>
+              <div class="meta-item" *ngIf="course.categoryName">
+                <span class="meta-label">Danh mục:</span>
+                <span class="meta-value">{{ course.categoryName }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout for other roles (existing) -->
+  <div *ngIf="!loading && !sessionService.isStudent()">
+    <!-- Empty state -->
+    <div *ngIf="courses.length === 0 && userRole" class="empty-state">
+      <div class="empty-icon">📚</div>
+      <h3 *ngIf="sessionService.isInstructor()">Bạn chưa tạo khóa học nào</h3>
+      <h3 *ngIf="sessionService.isAdmin()">Không có khóa học nào</h3>
+      <p *ngIf="sessionService.isInstructor()">Hãy tạo khóa học đầu tiên để bắt đầu giảng dạy!</p>
+      <p *ngIf="sessionService.isAdmin()">Hệ thống chưa có khóa học nào!</p>
+    </div>
+
+    <!-- Courses grid -->
+    <div *ngIf="courses.length > 0 && userRole" class="courses-grid">
+      <div *ngFor="let course of courses" 
+           class="course-card clickable" 
+           (click)="enterCourse(course)"
+           [style.cursor]="'pointer'"
+           [title]="'Bấm để xem khóa học: ' + getCourseTitle(course)">
+        <div class="course-header">
+          <!-- Ảnh thumbnail khóa học -->
+          <div class="course-thumbnail" *ngIf="course.thumbnailUrl">
+            <img [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl" 
+                 [alt]="getCourseTitle(course)"
+                 class="thumbnail-image">
+          </div>
+          <div class="course-thumbnail placeholder" *ngIf="!course.thumbnailUrl">
+            <div class="placeholder-icon">📚</div>
+          </div>
+          
+          <div class="course-header-content">
+            <h3 class="course-title">{{ getCourseTitle(course) }}</h3>
+            
+            <!-- Trạng thái khóa học cho giảng viên -->
+            <span *ngIf="sessionService.isInstructor()" 
+                  class="course-status" [class]="course.status">
+              {{ course.status === 'published' ? 'Đã xuất bản' : 'Nháp' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="course-info">
+          <p class="course-description">
+            {{ getCourseDescription(course) }}
+          </p>
+
+          <div class="course-meta">
+            <div class="meta-item" *ngIf="getCoursePrice(course)">
+              <span class="meta-label">Giá:</span>
+              <span class="meta-value price">{{ formatPrice(getCoursePrice(course)) }}</span>
+            </div>
+            
+            <div class="meta-item">
+              <span class="meta-label">Ngày tạo:</span>
+              <span class="meta-value">{{ formatDate(getCourseCreatedDate(course)) }}</span>
+            </div>
+
+            <div class="meta-item" *ngIf="course.categoryName">
+              <span class="meta-label">Danh mục:</span>
+              <span class="meta-value">{{ course.categoryName }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Notification Component -->
+<app-notification></app-notification>

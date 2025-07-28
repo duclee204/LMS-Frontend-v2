@@ -1,0 +1,99 @@
+<app-notification></app-notification>
+<div class="signup-container">
+  <div class="signup-form-wrapper">
+    <div class="signup-logo-row">
+      <img src="assets/pictures/logocmc.png" alt="Logo" class="signup-logo" />
+      <span class="logo-title">CMC Learn</span>
+    </div>
+    <h2 class="signup-title">Đăng ký tài khoản</h2>
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" formControlName="username" type="text" placeholder="Username" />
+        <div class="error-message" *ngIf="signupForm.get('username')?.invalid && signupForm.get('username')?.touched">
+          <small *ngIf="signupForm.get('username')?.errors?.['required']">Username là bắt buộc</small>
+          <small *ngIf="signupForm.get('username')?.errors?.['minlength']">Username phải có ít nhất 3 ký tự</small>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="fullname">Full Name</label>
+        <input id="fullname" formControlName="fullname" type="text" placeholder="Full Name" />
+        <div class="error-message" *ngIf="signupForm.get('fullname')?.invalid && signupForm.get('fullname')?.touched">
+          <small *ngIf="signupForm.get('fullname')?.errors?.['required']">Họ tên là bắt buộc</small>
+          <small *ngIf="signupForm.get('fullname')?.errors?.['minlength']">Họ tên phải có ít nhất 2 ký tự</small>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" formControlName="email" type="email" placeholder="Email" />
+        <div class="error-message" *ngIf="signupForm.get('email')?.invalid && signupForm.get('email')?.touched">
+          <small *ngIf="signupForm.get('email')?.errors?.['required']">Email là bắt buộc</small>
+          <small *ngIf="signupForm.get('email')?.errors?.['email']">Email không hợp lệ</small>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" formControlName="password" type="password" placeholder="Password" />
+        <div class="error-message" *ngIf="signupForm.get('password')?.invalid && signupForm.get('password')?.touched">
+          <small *ngIf="signupForm.get('password')?.errors?.['required']">Mật khẩu là bắt buộc</small>
+          <small *ngIf="signupForm.get('password')?.errors?.['weakPassword']">Mật khẩu không đủ mạnh</small>
+        </div>
+        
+        <!-- Password strength indicator - chỉ hiện khi đang nhập password -->
+        <div class="password-strength" *ngIf="signupForm.get('password')?.value">
+          <div class="strength-item" [class.valid]="passwordStrength.hasLength">
+            <span class="icon">{{ passwordStrength.hasLength ? '✓' : '✗' }}</span>
+            Ít nhất 10 ký tự
+          </div>
+          <div class="strength-item" [class.valid]="passwordStrength.hasNumber">
+            <span class="icon">{{ passwordStrength.hasNumber ? '✓' : '✗' }}</span>
+            Có chứa số
+          </div>
+          <div class="strength-item" [class.valid]="passwordStrength.hasLetter">
+            <span class="icon">{{ passwordStrength.hasLetter ? '✓' : '✗' }}</span>
+            Có chứa chữ cái
+          </div>
+          <div class="strength-item" [class.valid]="passwordStrength.hasSpecial">
+            <span class="icon">{{ passwordStrength.hasSpecial ? '✓' : '✗' }}</span>
+            Có ký tự đặc biệt (!&#64;#$%^&*)
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input id="confirmPassword" formControlName="confirmPassword" type="password" placeholder="Confirm Password" />
+        <div class="error-message" *ngIf="signupForm.get('confirmPassword')?.invalid && signupForm.get('confirmPassword')?.touched">
+          <small *ngIf="signupForm.get('confirmPassword')?.errors?.['required']">Xác nhận mật khẩu là bắt buộc</small>
+        </div>
+        <div class="error-message" *ngIf="signupForm.errors?.['passwordMismatch'] && signupForm.get('confirmPassword')?.touched">
+          <small>Mật khẩu xác nhận không khớp</small>
+        </div>
+      </div>
+      <div class="role-radio-row">
+        <label class="radio-label">
+          <input type="radio" formControlName="role" value="teacher" />
+          <span class="custom-radio"></span>
+          Teacher
+        </label>
+        <label class="radio-label">
+          <input type="radio" formControlName="role" value="student" />
+          <span class="custom-radio"></span>
+          Student
+        </label>
+      </div>
+      <div class="cv-upload-row" *ngIf="signupForm.get('role')?.value === 'teacher'">
+        <label for="cv">Upload CV</label>
+        <input id="cv" type="file" (change)="onFileChange($event)" />
+      </div>
+      
+      <button type="submit" class="signup-btn">Sign Up</button>
+    </form>
+    <div class="signup-footer">
+      <span>Already have an account?</span>
+      <a routerLink="/login">Log In</a>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Component -->
+<app-notification></app-notification>

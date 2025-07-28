@@ -1,0 +1,208 @@
+<div class="edit-quiz-container">
+  <div class="header">
+    <h2>Chỉnh sửa bài thi</h2>
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Hủy</button>
+      <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="isSaving">
+        <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+        {{ isSaving ? 'Đang lưu...' : 'Lưu thay đổi' }}
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Đang tải...</span>
+    </div>
+    <p>Đang tải dữ liệu bài thi...</p>
+  </div>
+
+  <form [formGroup]="editForm" *ngIf="!isLoading" class="edit-form">
+    <!-- Quiz Basic Info -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h4>Thông tin cơ bản</h4>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="mb-3">
+              <label for="title" class="form-label">Tiêu đề bài thi *</label>
+              <input 
+                type="text" 
+                id="title"
+                class="form-control" 
+                formControlName="title"
+                placeholder="Nhập tiêu đề bài thi">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label for="timeLimit" class="form-label">Thời gian (phút) *</label>
+              <input 
+                type="number" 
+                id="timeLimit"
+                class="form-control" 
+                formControlName="timeLimit"
+                min="1">
+            </div>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label for="description" class="form-label">Mô tả</label>
+          <textarea 
+            id="description"
+            class="form-control" 
+            formControlName="description"
+            rows="3"
+            placeholder="Nhập mô tả cho bài thi"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Questions -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4>Danh sách câu hỏi ({{ questionsArray.length }})</h4>
+        <button type="button" class="btn btn-success" (click)="addQuestion()">
+          <i class="fas fa-plus"></i> Thêm câu hỏi
+        </button>
+      </div>
+      <div class="card-body">
+        <div *ngIf="questionsArray.length === 0" class="text-center text-muted py-4">
+          <p>Chưa có câu hỏi nào. Nhấn "Thêm câu hỏi" để bắt đầu.</p>
+        </div>
+
+        <div formArrayName="questions">
+          <div 
+            *ngFor="let questionForm of questionsArray.controls; let i = index" 
+            [formGroupName]="i" 
+            class="question-item mb-4">
+            
+            <div class="question-header">
+              <h5>Câu hỏi {{ i + 1 }}</h5>
+              <button 
+                type="button" 
+                class="btn btn-danger btn-sm"
+                (click)="removeQuestion(i)"
+                [disabled]="isQuestionDeleting(questionForm.get('questionId')?.value)"
+                title="Xóa câu hỏi">
+                <i class="fas fa-trash" *ngIf="!isQuestionDeleting(questionForm.get('questionId')?.value)"></i>
+                <span class="spinner-border spinner-border-sm" *ngIf="isQuestionDeleting(questionForm.get('questionId')?.value)"></span>
+                <span *ngIf="isQuestionDeleting(questionForm.get('questionId')?.value)" class="ms-1">Đang xóa...</span>
+              </button>
+            </div>
+
+            <div class="question-content">
+              <!-- Question Text -->
+              <div class="mb-3">
+                <label class="form-label">Nội dung câu hỏi *</label>
+                <textarea 
+                  class="form-control" 
+                  formControlName="questionText"
+                  rows="3"
+                  placeholder="Nhập nội dung câu hỏi"></textarea>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <!-- Question Type -->
+                  <div class="mb-3">
+                    <label class="form-label">Loại câu hỏi *</label>
+                    <select 
+                      class="form-select" 
+                      formControlName="type"
+                      (change)="onQuestionTypeChange(i)">
+                      <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
+                      <option value="ESSAY">Tự luận</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <!-- Points -->
+                  <div class="mb-3">
+                    <label class="form-label">Điểm số *</label>
+                    <input 
+                      type="number" 
+                      class="form-control" 
+                      formControlName="points"
+                      step="0.1"
+                      min="0.1">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Multiple Choice Answers -->
+              <div *ngIf="questionForm.get('type')?.value === 'MULTIPLE_CHOICE'">
+                <div class="answers-section">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label">Các lựa chọn *</label>
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="addAnswer(i)">
+                      <i class="fas fa-plus"></i> Thêm lựa chọn
+                    </button>
+                  </div>
+                  
+                  <div formArrayName="answers">
+                    <div 
+                      *ngFor="let answerForm of getAnswersArray(i).controls; let j = index"
+                      [formGroupName]="j"
+                      class="answer-item mb-2">
+                      
+                      <div class="input-group">
+                        <div class="input-group-text">
+                          <input 
+                            type="radio" 
+                            [name]="'correct-answer-' + i"
+                            [checked]="answerForm.get('isCorrect')?.value"
+                            (change)="setCorrectAnswer(i, j)"
+                            title="Đáp án đúng">
+                        </div>
+                        <input 
+                          type="text" 
+                          class="form-control"
+                          formControlName="answerText"
+                          placeholder="Nhập nội dung lựa chọn">
+                        <button 
+                          type="button" 
+                          class="btn btn-outline-danger"
+                          (click)="removeAnswer(i, j)"
+                          [disabled]="getAnswersArray(i).length <= 2"
+                          title="Xóa lựa chọn">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    Nhấn vào nút radio để chọn đáp án đúng
+                  </small>
+                </div>
+              </div>
+
+              <!-- Essay Note -->
+              <div *ngIf="questionForm.get('type')?.value === 'ESSAY'" class="essay-note">
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i>
+                  Câu hỏi tự luận sẽ cần giảng viên chấm điểm thủ công.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Buttons -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary me-2" (click)="cancel()">Hủy</button>
+      <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="isSaving">
+        <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+        {{ isSaving ? 'Đang lưu...' : 'Lưu thay đổi' }}
+      </button>
+    </div>
+  </form>
+</div>

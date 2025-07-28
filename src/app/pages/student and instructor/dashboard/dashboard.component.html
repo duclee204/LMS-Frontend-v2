@@ -1,0 +1,89 @@
+<div class="dashboard-layout">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="dashboard-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="roleDisplayName"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">
+        Dashboard {{ roleDisplayName }}
+      </h1>
+      <p class="dashboard-subtitle" *ngIf="userName">
+        Xin chào, <strong>{{ userName }}</strong>
+        <span class="role-badge" [class]="userRole.toLowerCase().replace('role_', '')">
+          {{ roleDisplayName }}
+        </span>
+      </p>
+    </div>
+    
+    <div class="dashboard-stats">
+      <div class="stat-card" *ngIf="sessionService.isAdmin()">
+        <div class="stat-icon">👥</div>
+        <div class="stat-content">
+          <h3>Quản lý hệ thống</h3>
+          <p>Toàn quyền quản trị</p>
+        </div>
+      </div>
+      
+      <div class="stat-card" *ngIf="sessionService.isInstructor()">
+        <div class="stat-icon">📚</div>
+        <div class="stat-content">
+          <h3>Quản lý khóa học</h3>
+          <p>Tạo và quản lý khóa học</p>
+        </div>
+      </div>
+      
+      <div class="stat-card" *ngIf="sessionService.isStudent()">
+        <div class="stat-icon">🎓</div>
+        <div class="stat-content">
+          <h3>Học tập</h3>
+          <p>Tham gia khóa học</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Nội dung dashboard khác ở đây -->
+    <div class="dashboard-actions">
+      <div class="action-card" *ngIf="sessionService.isAdmin()">
+        <h3>🔧 Quản trị viên</h3>
+        <ul>
+          <li>Quản lý người dùng</li>
+          <li>Quản lý khóa học</li>
+          <li>Xem báo cáo hệ thống</li>
+          <li>Cấu hình hệ thống</li>
+        </ul>
+      </div>
+      
+      <div class="action-card" *ngIf="sessionService.isInstructor()">
+        <h3>👨‍🏫 Giảng viên</h3>
+        <ul>
+          <li>Tạo khóa học mới</li>
+          <li>Upload video bài giảng</li>
+          <li>Quản lý sinh viên</li>
+          <li>Xem thống kê khóa học</li>
+        </ul>
+      </div>
+      
+      <div class="action-card" *ngIf="sessionService.isStudent()">
+        <h3>🎓 Sinh viên</h3>
+        <ul>
+          <li>Xem tất cả khóa học</li>
+          <li>Đăng ký khóa học</li>
+          <li>Học online</li>
+          <li>Theo dõi tiến độ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

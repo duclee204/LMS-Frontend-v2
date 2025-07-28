@@ -1,0 +1,185 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav" *ngIf="courseInfo || courseId">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || ('Course ' + courseId) }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item current-page">Tests</span>
+        </nav>
+      </div>
+
+    <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+      <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+          <a href="#" (click)="navigateToHome(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Home' }">
+            <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+            <span class="menu-text">Home</span>
+          </a>
+        </div>
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+          <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+            <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+            <span class="menu-text">Discussion</span>
+          </a>
+        </div>
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+          <a href="#" (click)="navigateToGrades(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+            <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+            <span class="menu-text">Grades</span>
+          </a>
+        </div>
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+          <a href="#" (click)="navigateToModules(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+            <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+            <span class="menu-text">Modules</span>
+          </a>
+        </div>
+        <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+          <a href="#" (click)="navigateToTests(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+            <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+            <span class="menu-text">Tests</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="right-content">
+        <!-- Home Content -->
+        <div class="course-content" *ngIf="currentPage === 'Home'">
+          <h2>Welcome to Course Home</h2>
+          <p>This is the home page of your course. Here you can find general information and announcements.</p>
+        </div>
+
+        <!-- Discussion Content -->
+        <div class="course-content" *ngIf="currentPage === 'Discussion'">
+          <h2>Course Discussion</h2>
+          <p>Join the discussion with your classmates and instructors.</p>
+        </div>
+
+        <!-- Grades Content -->
+        <div class="course-content" *ngIf="currentPage === 'Grades'">
+          <h2>Your Grades</h2>
+          <p>View your grades and performance in this course.</p>
+        </div>
+
+        <!-- Tests Content -->
+        <div class="course-content" *ngIf="currentPage === 'Tests'">
+          <div class="top-bar">
+            <button class="add-exam" *ngIf="canManageContent()" (click)="showAddExam()">
+              <i class="fas fa-plus"></i> Exam
+            </button>
+            <div class="filters">
+              <div class="search-wrapper">
+                <input type="text" placeholder="Search" [(ngModel)]="searchTerm" (input)="searchExams()" />
+                <i class="fas fa-search"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="exams-container">
+            <div *ngFor="let exam of filteredExams" class="exam-card">
+              <div class="exam-header" (click)="handleExamClick(exam)">
+                <div class="exam-info">
+                  <h3 class="exam-title">
+                    <i [class]="exam.expanded ? 'fas fa-chevron-down' : 'fas fa-chevron-right'" 
+                       class="expand-icon"></i>
+                    {{ exam.title }}
+                  </h3>
+                  <p class="exam-description">{{ exam.description || 'No description' }}</p>
+                  
+                  <!-- Completion Details for Students -->
+                  <div class="completion-details" *ngIf="!canManageContent() && exam.isCompleted">
+                    <div class="completion-info">
+                      <span class="score-badge" *ngIf="exam.score !== undefined">
+                        <i class="fas fa-trophy"></i>
+                        Điểm: {{ exam.score }}%
+                      </span>
+                      <span class="date-badge" *ngIf="exam.completionDate">
+                        <i class="fas fa-calendar-check"></i>
+                        Hoàn thành: {{ exam.completionDate | date:'dd/MM/yyyy HH:mm' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="exam-meta">
+                  <div class="meta-item exam-type-item">
+                    <i [class]="getExamTypeIcon(exam)"></i>
+                    <span class="exam-type-badge" [class]="getExamTypeClass(exam)">
+                      {{ getExamType(exam) }}
+                    </span>
+                  </div>
+                  
+                  <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ exam.timeLimit || 'N/A' }} minutes</span>
+                  </div>
+                  
+                  <div class="meta-item status-item" *ngIf="canManageContent()">
+                    <button 
+                      class="status-toggle" 
+                      [class.published]="exam.publish"
+                      [class.draft]="!exam.publish"
+                      (click)="togglePublishStatus(exam); $event.stopPropagation()"
+                      title="Click to toggle publish status">
+                      <i [class]="exam.publish ? 'fas fa-check-circle' : 'fas fa-ban'"></i>
+                      {{ exam.publish ? 'Published' : 'Draft' }}
+                    </button>
+                  </div>
+
+                  <div class="meta-item status-item" *ngIf="!canManageContent()">
+                    <span [class]="exam.isCompleted ? 'status-completed' : 'status-pending'">
+                      <i [class]="exam.isCompleted ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
+                      {{ exam.isCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="exam.expanded && exam.questions" class="exam-questions">
+                <h4>Questions:</h4>
+                <div *ngFor="let question of exam.questions" class="question-item">
+                  <small>{{ question.questionText }}</small>
+                </div>
+              </div>
+
+              <div class="exam-actions" *ngIf="canManageContent()">
+                <button class="btn btn-edit" (click)="editExam(exam)" title="Edit">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-delete" (click)="deleteExam(exam)" title="Delete">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+          <p *ngIf="filteredExams.length === 0"
+            style="color: red; margin-top: 10px; text-align: center; font-weight: 500;">
+            {{ canManageContent() ? 'No exams found. Click + Exam to create one.' : 'No exams available.' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+  </div>
+</div>

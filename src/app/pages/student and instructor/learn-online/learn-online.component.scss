@@ -1,0 +1,366 @@
+// Component wrapper
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.learn-online-layout {
+  font-family: "Inter", sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(to right, #b7cbd1, #a1b9be);
+  position: relative;
+}
+
+/* Main content - offset để không bị sidebar đè */
+main.content {
+  margin-left: 260px; /* Width của sidebar + padding */
+  margin-right: 272px; /* Width của right sidebar + padding */
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: calc(100% - 532px); /* Total width - both sidebars */
+  box-sizing: border-box;
+}
+
+main.content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: #374151;
+}
+
+/* Video call dropdown - chỉ giữ container */
+.video-call-dropdown {
+  position: relative;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.video-call-dropdown .dropdown-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+  border-radius: 0 0 0.375rem 0.375rem;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  width: 6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  border: none;
+  z-index: 20;
+}
+
+.video-call-dropdown .dropdown-button i {
+  font-size: 0.75rem;
+}
+
+.video-call-dropdown ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  width: 6rem;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 0.1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #374151;
+  display: none;
+  flex-direction: column;
+  z-index: 10;
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.video-call-dropdown ul.show {
+  display: flex;
+}
+
+.video-call-dropdown ul li {
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+.video-call-dropdown ul li:hover {
+  background: #f3f4f6;
+}
+
+/* Video container */
+.video-container {
+  position: relative;
+  margin-top: 1.5rem;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  max-width: 100%;
+  min-height: 400px; /* Minimum height for consistent layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0.375rem;
+}
+
+.video-timer {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: black;
+}
+
+.video-timer .red-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: #dc2626;
+  border-radius: 50%;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  color: #1e40af;
+  font-size: 1.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Loading message */
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #374151;
+  padding: 2rem;
+}
+
+.loading-message i {
+  font-size: 2rem;
+  color: #6ea3d9;
+}
+
+.loading-message p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* No videos message */
+.no-videos-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #6b7280;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-videos-message i {
+  font-size: 4rem;
+  color: #d1d5db;
+}
+
+.no-videos-message h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.no-videos-message p {
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* Description */
+.description {
+  font-size: 0.75rem;
+  max-width: 100%;
+  margin-top: 1rem;
+}
+
+.description p {
+  margin: 0.25rem 0;
+}
+
+.description p.title {
+  font-weight: 700;
+}
+
+.description p.subtitle {
+  font-weight: 600;
+}
+
+/* Right sidebar */
+aside.right-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 16rem; /* 72 */
+  height: 100vh;
+  background: white;
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  box-shadow: -6px 0 10px #a1b9be;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.right-sidebar h3 {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  margin-top: 0;
+  color: #374151;
+}
+
+/* Lessons loading state */
+.lessons-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  padding: 1rem;
+  text-align: center;
+}
+
+.lessons-loading i {
+  font-size: 1.25rem;
+  color: #6ea3d9;
+}
+
+.lessons-loading p {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+/* No lessons message */
+.no-lessons-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.no-lessons-message i {
+  font-size: 2rem;
+  color: #d1d5db;
+}
+
+.no-lessons-message p {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+/* Enhanced lessons list */
+nav.recorded-videos a {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  color: black;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+nav.recorded-videos a:hover {
+  background-color: #f3f4f6;
+}
+
+nav.recorded-videos a.active {
+  background-color: #c6d0ff;
+  color: #3a5dbf;
+  border-color: #6ea3d9;
+}
+
+nav.recorded-videos a div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+nav.recorded-videos a .lesson-number {
+  font-weight: 600;
+  color: #6ea3d9;
+  font-size: 0.7rem;
+}
+
+nav.recorded-videos a .lesson-title {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+nav.recorded-videos a .lesson-duration {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+nav.recorded-videos a i {
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  color: #6ea3d9;
+}
+
+button.open-course {
+  margin-top: 1.5rem;
+  background-color: #1e2ea7;
+  color: white;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  padding: 0.75rem 0;
+  width: 100%;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+}
+
+/* Profile header styling */
+.profile-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}

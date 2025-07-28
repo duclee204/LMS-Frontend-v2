@@ -1,0 +1,24 @@
+<!-- Login Page CMC Learn -->
+<app-notification></app-notification>
+<div class="login-container">
+  <div class="login-box">
+    <div class="login-logo-row">
+      <img src="/assets/pictures/logocmc.png" alt="CMC Logo" class="logo-cmc" />
+      <span class="logo-title">CMC Learn</span>
+    </div>
+    <h2 class="login-title">Đăng nhập</h2>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <input id="username" formControlName="username" type="text" placeholder="Username" />
+      </div>
+      <div class="form-group">
+        <input id="password" formControlName="password" type="password" placeholder="Password" />
+      </div>
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+    <div class="login-links">
+      <a href="#" class="forgot-link">Quên mật khẩu?</a>
+    </div>
+    <button class="register-btn" type="button" [routerLink]="['/signup']">Register</button>
+  </div>
+</div>

@@ -1,0 +1,34 @@
+<aside id="sidebar">
+  <div class="logo-container">
+    <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/12/Icon-Dai-hoc-CMC.png"
+      alt="CMC Learn logo" width="40" height="40" />
+    <span>CMC Learn</span>
+  </div>
+  <nav>
+    <a (click)="navigateTo('/dashboard'); $event.preventDefault()" [class.active]="isActiveRoute('/dashboard')" style="cursor: pointer;">
+      <i class="fas fa-th-large"></i>Dashboard
+    </a>
+    <a (click)="navigateTo('/calendar'); $event.preventDefault()" [class.active]="isActiveRoute('/calendar')" style="cursor: pointer;">
+      <i class="fas fa-calendar"></i>Calendar
+    </a>
+    <a (click)="navigateTo('/courses'); $event.preventDefault()" [class.active]="isActiveRoute('/courses')" style="cursor: pointer;">
+      <i class="fas fa-book"></i>Courses
+    </a>
+    <a (click)="navigateTo('/assignments'); $event.preventDefault()" [class.active]="isActiveRoute('/assignments')" style="cursor: pointer;">
+      <i class="fas fa-pen-square"></i>Assignments
+    </a>
+    <a (click)="navigateTo('/messages'); $event.preventDefault()" [class.active]="isActiveRoute('/messages')" style="cursor: pointer;">
+      <i class="fas fa-comment-alt"></i>Messages
+    </a>
+    <a (click)="navigateTo('/help'); $event.preventDefault()" [class.active]="isActiveRoute('/help')" style="cursor: pointer;">
+      <i class="fas fa-question-circle"></i>Help
+    </a>
+    <a (click)="navigateTo('/settings'); $event.preventDefault()" [class.active]="isActiveRoute('/settings')" style="cursor: pointer;">
+      <i class="fas fa-cog"></i>Settings
+    </a>
+  </nav>
+  <a class="logout" (click)="logout(); $event.preventDefault()" style="cursor: pointer;">
+    <i class="fas fa-sign-out-alt"></i>
+    Log out
+  </a>
+</aside>

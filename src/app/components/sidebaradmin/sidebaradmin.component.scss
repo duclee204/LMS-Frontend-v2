@@ -1,0 +1,132 @@
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css');
+
+aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: #FFFAFA;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    overflow-y: auto;
+    border-radius: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    transition: transform 0.3s ease;
+    z-index: 10;
+    margin: 0;
+    padding: 0;
+}
+
+aside.hide {
+    transform: translateX(-100%);
+}
+
+aside .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 32px 32px 32px;
+    margin-bottom: 10px;
+    margin-top: 30px;
+}
+
+aside .logo-container img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+aside .logo-container span {
+    background: linear-gradient(90deg, #1C9AD6 0%, #8CC9E8 47%, #2457C5 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+    font-size: 27px;
+    margin: 0;
+    user-select: none;
+}
+
+nav {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+nav a {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 32px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #4979D1;
+    transition: background-color 0.2s ease, color 0.2s;
+    margin-bottom: 20px;
+    user-select: none;
+    text-decoration: none !important;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+nav a:hover {
+    background-color: rgba(147, 220, 255, 0.3);
+    color: rgba(73, 121, 209, 0.7);
+    text-decoration: none !important;
+}
+
+#sidebaradmin nav a.active {
+    background-color: #93DCFF !important;
+    color: #2457C5 !important;
+    font-weight: 700 !important;
+}
+
+/* Additional backup selector */
+aside nav a.active {
+    background-color: #93DCFF !important;
+    color: #2457C5 !important;
+    font-weight: 700 !important;
+}
+
+nav a i {
+    font-size: 20px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #8a8a8a;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: auto;
+    user-select: none;
+    text-decoration: none !important;
+    transition: background-color 0.2s ease, color 0.2s;
+}
+
+.logout:hover {
+    background-color: #f5f5f5;
+    color: #666;
+}
+
+.logout i {
+    font-size: 24px;
+    min-width: 24px;
+    text-align: center;
+}
+
+@media (max-width: 767px) {
+    aside {
+        display: none;
+    }
+}

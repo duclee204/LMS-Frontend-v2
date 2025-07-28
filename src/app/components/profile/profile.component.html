@@ -1,0 +1,22 @@
+<div class="header-right" aria-label="Notifications and messages">
+  <i *ngIf="showNotifications" class="far fa-bell" title="Notifications" tabindex="0"></i>
+  <i *ngIf="showMessages" class="far fa-envelope" title="Messages" tabindex="0"></i>
+  <div class="profile" 
+       tabindex="0" 
+       aria-label="User profile menu" 
+       (click)="toggleProfileDropdown($event)"
+       (clickOutside)="closeDropdown()">
+    <div class="profile-img-wrapper">
+      <img [src]="avatarUrl" [alt]="username + ' profile image'" />
+    </div>
+    <div class="profile-info">
+      <p class="profile-name">{{ username }}</p>
+      <p class="profile-role">{{ role }}</p>
+    </div>
+    <i class="fas fa-chevron-down"></i>
+    <div class="profile-dropdown" [style.display]="profileDropdownVisible ? 'block' : 'none'">
+      <div class="dropdown-item" (click)="updateProfile()">Cập nhật hồ sơ</div>
+      <div class="dropdown-item" (click)="onLogout()">Đăng xuất</div>
+    </div>
+  </div>
+</div>

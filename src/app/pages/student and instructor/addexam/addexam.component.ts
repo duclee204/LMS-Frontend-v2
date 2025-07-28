@@ -1,0 +1,506 @@
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  HostListener,
+  AfterViewInit,
+  OnInit,
+  Inject,
+  PLATFORM_ID
+} from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { SessionService } from '../../../services/session.service';
+import { CourseService, Course } from '../../../services/course.service';
+import { ExamService } from '../../../services/exam.service';
+import { ProfileComponent } from '../../../components/profile/profile.component';
+import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
+
+// Interface for exam data
+export interface ExamData {
+  title: string;
+  description: string;
+  courseId: number;
+  quizType: 'MULTIPLE_CHOICE' | 'ESSAY';
+  timeLimit: number;
+  hasTimeLimit: boolean;
+  shuffleAnswers: boolean;
+  allowMultipleAttempts: boolean;
+  showQuizResponses: boolean;
+  showOneQuestionAtATime: boolean;
+  publish: boolean;
+}
+
+@Component({
+  selector: 'app-addexam',
+  standalone: true,
+  templateUrl: './addexam.component.html',
+  styleUrls: ['./addexam.component.scss'],
+  imports: [CommonModule, FormsModule, RouterModule, ProfileComponent, SidebarWrapperComponent],
+})
+export class AddExamComponent implements OnInit, AfterViewInit {
+  // Properties for layout and navigation
+  public currentPage = 'Tests';
+  public leftMenuHidden = false;
+  public showProfileDropdown = false;
+  public courseId: number | null = null;
+  public courseInfo: Course | null = null;
+  public activeTab: 'basic' | 'questions' | 'answers' = 'basic';
+
+  // Profile properties
+  public username: string = '';
+  public userRole: string = '';
+  public avatarUrl: string = '';
+
+  // Exam form data
+  public examData: ExamData = {
+    title: '',
+    description: '',
+    courseId: 0,
+    quizType: 'MULTIPLE_CHOICE',
+    timeLimit: 60,
+    hasTimeLimit: false,
+    shuffleAnswers: false,
+    allowMultipleAttempts: false,
+    showQuizResponses: false,
+    showOneQuestionAtATime: false,
+    publish: false
+  };
+
+  // Form state
+  public isSaving = false;
+
+  // Legacy properties for backward compatibility
+  showDropdown = false;
+  isMenuHidden = false;
+  isMobile = window.innerWidth < 768;
+
+  @ViewChild('leftMenu', { static: false }) leftMenu!: ElementRef;
+  @ViewChild('toggleBtn', { static: false }) toggleBtn!: ElementRef;
+  @ViewChild('contentWrapper', { static: false }) contentWrapper!: ElementRef;
+  @ViewChild('searchInput', { static: false }) searchInput?: ElementRef;
+  @ViewChild('noResultMessage', { static: false }) noResultMessage?: ElementRef;
+
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private courseService: CourseService,
+    private examService: ExamService,
+    public sessionService: SessionService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) { }
+
+  ngOnInit(): void {
+    // Initialize user info
+    this.username = this.sessionService.getFullName() || 'User';
+    this.userRole = this.sessionService.getUserRole() || 'student';
+    this.avatarUrl = '';
+
+    // Debug logging
+    console.log('🔍 AddExam component initialized');
+    console.log('👤 User role:', this.userRole);
+    console.log('🎓 Is Student:', this.sessionService.isStudent());
+    console.log('👨‍🏫 Can Manage Content:', this.canManageContent());
+
+    // Get courseId from query params
+    if (isPlatformBrowser(this.platformId)) {
+      this.route.queryParams.subscribe(params => {
+        this.courseId = params['courseId'] ? +params['courseId'] : null;
+        const courseName = params['courseName'];
+        console.log('📚 Course ID from query params:', this.courseId);
+        console.log('📚 Course Name from query params:', courseName);
+
+        if (this.courseId) {
+          this.examData.courseId = this.courseId;
+          console.log('✅ Set examData.courseId to:', this.examData.courseId);
+        } else {
+          console.log('⚠️ No courseId found, setting to 0');
+          this.examData.courseId = 0;
+        }
+
+        // If we have courseName from params, use it immediately for breadcrumb
+        if (courseName && courseName.trim()) {
+          this.courseInfo = {
+            courseId: this.courseId!,
+            title: decodeURIComponent(courseName),
+            description: '',
+            categoryId: 0,
+            instructorId: 0,
+            status: '',
+            price: 0,
+            thumbnailUrl: ''
+          };
+          console.log('✅ Using course name from params:', decodeURIComponent(courseName));
+        } else if (this.courseId) {
+          console.log('🔄 No courseName in params, trying API fallback...');
+          this.loadCourseInfo();
+        }
+      });
+    }
+  }
+
+  // Helper method to check if current user can manage content (instructor/admin)
+  canManageContent(): boolean {
+    return this.sessionService.isInstructor() || this.sessionService.isAdmin();
+  }
+
+  // Load course information for breadcrumb
+  loadCourseInfo(): void {
+    if (!this.courseId) return;
+
+    console.log('🔄 Loading course info for courseId:', this.courseId);
+
+    this.courseService.getCourseById(this.courseId).subscribe({
+      next: (course: Course) => {
+        this.courseInfo = course;
+        console.log('✅ Course info loaded successfully:', course.title);
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading course info:', err);
+
+        // Fallback: Create a temporary courseInfo with generic title
+        this.courseInfo = {
+          courseId: this.courseId!,
+          title: `Course ${this.courseId}`,
+          description: '',
+          categoryId: 0,
+          instructorId: 0,
+          status: '',
+          price: 0,
+          thumbnailUrl: ''
+        };
+        console.log('🔧 Using fallback course title:', `Course ${this.courseId}`);
+      }
+    });
+  }
+
+  // Tab management
+  setActiveTab(tab: 'basic' | 'questions' | 'answers'): void {
+    this.activeTab = tab;
+  }
+
+  // Form validation
+  isFormValid(): boolean {
+    const isValid = this.examData.title.trim().length > 0 && 
+                   this.courseId !== null && 
+                   this.courseId > 0 && 
+                   this.examData.courseId > 0;
+    
+    if (!isValid) {
+      console.log('❌ Form validation failed:');
+      console.log('📝 Title valid:', this.examData.title.trim().length > 0);
+      console.log('📚 CourseId (component):', this.courseId);
+      console.log('📚 CourseId (examData):', this.examData.courseId);
+    }
+    
+    return isValid;
+  }
+
+  // Time limit change handler
+  onTimeLimitChange(event: any): void {
+    if (!event.target.checked) {
+      this.examData.timeLimit = 0;
+    } else if (this.examData.timeLimit <= 0) {
+      this.examData.timeLimit = 60; // Default to 60 minutes
+    }
+  }
+
+  // Save exam (draft)
+  saveExam(): void {
+    if (!this.isFormValid() || this.isSaving) return;
+
+    this.isSaving = true;
+    this.examData.publish = false;
+
+    const examDto = this.buildExamDto();
+
+    console.log('💾 Saving exam as draft:', examDto);
+
+    this.examService.createQuiz(examDto).subscribe({
+      next: (response: any) => {
+        console.log('✅ Exam saved successfully:', response);
+        this.isSaving = false;
+        alert('Exam đã được lưu thành công!');
+        
+        // Navigate to question creation page
+        this.navigateToCreateQuestion(response.quizId || 'new');
+      },
+      error: (err: any) => {
+        console.error('❌ Error saving exam:', err);
+        console.error('❌ Error status:', err.status);
+        console.error('❌ Error error:', err.error);
+        console.error('❌ Error message:', err.message);
+        this.isSaving = false;
+        
+        let errorMessage = 'Không thể lưu exam: ';
+        if (err.status === 403) {
+          errorMessage += 'Không có quyền truy cập (403 Forbidden). Hãy kiểm tra quyền user hoặc đăng nhập lại.';
+        } else if (err.status === 401) {
+          errorMessage += 'Chưa đăng nhập (401 Unauthorized). Hãy đăng nhập lại.';
+        } else if (err.status === 400) {
+          errorMessage += 'Dữ liệu không hợp lệ (400 Bad Request): ' + (err.error?.message || 'Kiểm tra lại thông tin nhập');
+        } else {
+          errorMessage += (err.error?.message || err.message || 'Lỗi không xác định');
+        }
+        alert(errorMessage);
+      }
+    });
+  }
+
+  // Save and publish exam
+  saveAndPublish(): void {
+    if (!this.isFormValid() || this.isSaving) return;
+
+    this.isSaving = true;
+    this.examData.publish = true;
+
+    const examDto = this.buildExamDto();
+
+    console.log('📢 Saving and publishing exam:', examDto);
+
+    this.examService.createQuiz(examDto).subscribe({
+      next: (response: any) => {
+        console.log('✅ Exam saved and published successfully:', response);
+        this.isSaving = false;
+        alert('Exam đã được lưu và xuất bản thành công!');
+        
+        // Navigate to question creation page
+        this.navigateToCreateQuestion(response.quizId || 'new');
+      },
+      error: (err: any) => {
+        console.error('❌ Error saving and publishing exam:', err);
+        console.error('❌ Error status:', err.status);
+        console.error('❌ Error error:', err.error);
+        console.error('❌ Error message:', err.message);
+        this.isSaving = false;
+        
+        let errorMessage = 'Không thể lưu exam: ';
+        if (err.status === 403) {
+          errorMessage += 'Không có quyền truy cập (403 Forbidden). Hãy kiểm tra quyền user hoặc đăng nhập lại.';
+        } else if (err.status === 401) {
+          errorMessage += 'Chưa đăng nhập (401 Unauthorized). Hãy đăng nhập lại.';
+        } else if (err.status === 400) {
+          errorMessage += 'Dữ liệu không hợp lệ (400 Bad Request): ' + (err.error?.message || 'Kiểm tra lại thông tin nhập');
+        } else {
+          errorMessage += (err.error?.message || err.message || 'Lỗi không xác định');
+        }
+        alert(errorMessage);
+      }
+    });
+  }
+
+  // Build exam DTO for API
+  private buildExamDto(): any {
+    const dto = {
+      title: this.examData.title.trim(),
+      description: this.examData.description.trim() || null,
+      courseId: this.examData.courseId,
+      quizType: this.examData.quizType,
+      timeLimit: this.examData.hasTimeLimit ? this.examData.timeLimit : null,
+      shuffleAnswers: this.examData.shuffleAnswers,
+      allowMultipleAttempts: this.examData.allowMultipleAttempts,
+      showQuizResponses: this.examData.showQuizResponses,
+      showOneQuestionAtATime: this.examData.showOneQuestionAtATime,
+      publish: this.examData.publish
+    };
+
+    console.log('🔧 Building exam DTO:');
+    console.log('📝 Title:', dto.title);
+    console.log('📚 CourseId:', dto.courseId);
+    console.log('🧪 QuizType:', dto.quizType);
+    console.log('📖 Description:', dto.description);
+    console.log('⏱️ TimeLimit:', dto.timeLimit);
+    console.log('🎯 Publish:', dto.publish);
+
+    return dto;
+  }
+
+  // Cancel exam creation
+  cancelExam(): void {
+    if (confirm('Bạn có chắc chắn muốn hủy tạo exam? Tất cả thông tin đã nhập sẽ bị mất.')) {
+      this.navigateBackToExams();
+    }
+  }
+
+  // Navigate to create question page
+  private navigateToCreateQuestion(quizId: string | number): void {
+    if (this.courseId && this.courseInfo) {
+      this.router.navigate(['/question-manager'], {
+        queryParams: {
+          courseId: this.courseId,
+          courseName: encodeURIComponent(this.courseInfo.title),
+          quizId: quizId,
+          quizTitle: encodeURIComponent(this.examData.title),
+          questionType: this.examData.quizType
+        }
+      });
+    } else {
+      console.error('❌ Cannot navigate to create question: missing courseId or courseInfo');
+    }
+  }
+
+  // Navigate back to exams page
+  private navigateBackToExams(): void {
+    if (this.courseId && this.courseInfo) {
+      this.router.navigate(['/exam'], {
+        queryParams: {
+          courseId: this.courseId,
+          courseName: encodeURIComponent(this.courseInfo.title)
+        }
+      });
+    } else {
+      this.router.navigate(['/exam']);
+    }
+  }
+
+  // Navigation methods
+  navigateToHome(): void {
+    console.log('navigateToHome called');
+    this.currentPage = 'Home';
+  }
+
+  navigateToDiscussion(): void {
+    console.log('navigateToDiscussion called');
+    this.currentPage = 'Discussion';
+  }
+
+  navigateToGrades(): void {
+    console.log('navigateToGrades called');
+    this.currentPage = 'Grades';
+  }
+
+  navigateToModules(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    console.log('🔄 Navigating to modules...');
+
+    if (this.courseId && this.courseInfo) {
+      this.router.navigate(['/module'], {
+        queryParams: {
+          courseId: this.courseId,
+          courseName: encodeURIComponent(this.courseInfo.title),
+          page: 'Modules'
+        }
+      });
+    } else {
+      console.error('❌ Cannot navigate to modules: missing courseId or courseInfo');
+    }
+  }
+
+  navigateToTests(): void {
+    if (this.courseId && this.courseInfo) {
+      this.router.navigate(['/exam'], {
+        queryParams: {
+          courseId: this.courseId,
+          courseName: encodeURIComponent(this.courseInfo.title)
+        }
+      });
+    } else {
+      console.error('❌ Cannot navigate to tests: missing courseId or courseInfo');
+    }
+  }
+
+  // Profile methods
+  onProfileUpdate(): void {
+    console.log('Profile update requested');
+  }
+
+  onLogout(): void {
+    this.sessionService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  getDisplayRole(role: string): string {
+    if (!role) return 'User';
+    const cleanRole = role.replace('ROLE_', '');
+    return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1).toLowerCase();
+  }
+
+  toggleLeftMenu(): void {
+    this.leftMenuHidden = !this.leftMenuHidden;
+    // Legacy support
+    this.isMenuHidden = this.leftMenuHidden;
+  }
+
+  toggleProfileDropdown(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.showProfileDropdown = !this.showProfileDropdown;
+    // Legacy support
+    this.showDropdown = this.showProfileDropdown;
+  }
+
+  ngAfterViewInit(): void {
+    if (this.searchInput && this.noResultMessage) {
+      this.searchInput.nativeElement.addEventListener('input', () => {
+        const keyword = this.searchInput!.nativeElement.value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+        let found = false;
+
+        rows.forEach((row) => {
+          const quizName = row.querySelector('td')?.textContent?.toLowerCase() || '';
+          if (quizName.includes(keyword)) {
+            (row as HTMLElement).style.display = '';
+            found = true;
+          } else {
+            (row as HTMLElement).style.display = 'none';
+          }
+        });
+
+        this.noResultMessage!.nativeElement.style.display = found ? 'none' : 'block';
+      });
+    }
+  }
+
+  onQuizTypeChange(): void {
+    // Reset quiz-specific options when changing quiz type
+    if (this.examData.quizType === 'ESSAY') {
+      this.examData.shuffleAnswers = false;
+      this.examData.allowMultipleAttempts = false;
+      this.examData.showQuizResponses = false;
+      this.examData.showOneQuestionAtATime = false;
+    }
+  }
+
+  // Check if current quiz type is multiple choice
+  isMultipleChoice(): boolean {
+    return this.examData.quizType === 'MULTIPLE_CHOICE';
+  }
+
+  toggleProfile(event: MouseEvent): void {
+    event.stopPropagation();
+    this.showDropdown = !this.showDropdown;
+    this.showProfileDropdown = this.showDropdown;
+  }
+
+  updateProfile(): void {
+    alert('Chuyển đến trang cập nhật hồ sơ...');
+  }
+
+  logout(): void {
+    this.onLogout();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event): void {
+    const target = event.target as HTMLElement;
+
+    if (!target.closest('.profile')) {
+      this.showDropdown = false;
+      this.showProfileDropdown = false;
+    }
+
+    if (this.isMobile && this.leftMenu && this.toggleBtn) {
+      if (
+        !this.leftMenu.nativeElement.contains(event.target) &&
+        !this.toggleBtn.nativeElement.contains(event.target)
+      ) {
+        this.isMenuHidden = true;
+        this.leftMenuHidden = true;
+      }
+    }
+  }
+}

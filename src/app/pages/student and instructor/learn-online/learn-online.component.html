@@ -1,0 +1,72 @@
+<!-- learn-online.component.html -->
+<app-notification></app-notification>
+<div class="learn-online-layout">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <!-- Sidebar content (unchanged) -->
+    <app-sidebar></app-sidebar>
+  </aside>
+  
+  <main class="content" role="main">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <!-- Course title - hiển thị tên khóa học thay vì "Classroom" -->
+    <h2>{{ getCurrentCourseName() }}</h2>
+
+    <div class="video-call-dropdown">
+      <div class="video-container">
+        <!-- Loading state -->
+        <div *ngIf="loading" class="loading-message">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Đang tải khóa học...</p>
+        </div>
+        
+        <!-- No videos message -->
+        <div *ngIf="hasNoVideos && !loading" class="no-videos-message">
+          <i class="fas fa-chalkboard-teacher"></i>
+          <h3>Khóa học chưa có bài học</h3>
+          <p>Hiện tại khóa học này chưa có video bài giảng nào. Vui lòng liên hệ giảng viên để biết thêm thông tin.</p>
+        </div>
+        
+        <!-- Video player - only show when has videos and not loading -->
+        <video *ngIf="!hasNoVideos && !loading" #classroomVideo controls autoplay muted style="width:100%; border-radius: 12px;"></video>
+      </div>
+    </div>
+  </main>
+  
+  <aside class="right-sidebar" role="complementary" aria-label="Course lessons">
+    <h3>Danh sách bài học</h3>
+    
+    <!-- Loading state for lessons -->
+    <div *ngIf="loading" class="lessons-loading">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Đang tải bài học...</p>
+    </div>
+    
+    <!-- No lessons message -->
+    <div *ngIf="hasNoVideos && !loading" class="no-lessons-message">
+      <i class="fas fa-book-open"></i>
+      <p>Chưa có bài học nào</p>
+    </div>
+    
+    <!-- Lessons list -->
+    <nav *ngIf="!hasNoVideos && !loading" class="recorded-videos">
+      <a *ngFor="let video of videos; let i = index" href="#" (click)="playVideo(video, $event)" [class.active]="video === currentVideo">
+        <div>
+          <i class="far fa-play-circle"></i> 
+          <span class="lesson-number">Bài {{ i + 1 }}:</span>
+          <span class="lesson-title">{{ video.title }}</span>
+        </div>
+        <span class="lesson-duration">{{ video.duration || '00:00' }}</span>
+      </a>
+    </nav>
+  </aside>  
+</div>

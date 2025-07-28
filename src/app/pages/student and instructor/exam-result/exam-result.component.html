@@ -1,0 +1,95 @@
+<div class="exam-result-container" *ngIf="!isLoading && result">
+  <div class="result-header">
+    <div class="score-display" [ngClass]="getGradeClass()">
+      <div class="score-number">{{ result.score | number:'1.1-1' }}%</div>
+      <div class="grade-letter">{{ getGradeLetter() }}</div>
+    </div>
+    
+    <div class="result-info">
+      <h2>Kết quả bài thi</h2>
+      <div class="score-details">
+        <div class="detail-item">
+          <span class="label">Điểm đạt được:</span>
+          <span class="value">{{ result.earnedPoints }}/{{ result.totalPoints }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Câu đúng:</span>
+          <span class="value">{{ getCorrectAnswersCount() }}/{{ getTotalQuestions() }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">Trạng thái:</span>
+          <span class="value" [ngClass]="isPassing() ? 'text-success' : 'text-danger'">
+            {{ isPassing() ? 'Đạt' : 'Không đạt' }}
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Quay lại
+      </button>
+      <button class="btn btn-primary" (click)="retakeQuiz()" *ngIf="userRole !== 'INSTRUCTOR'">
+        <i class="fas fa-redo"></i> Làm lại
+      </button>
+    </div>
+  </div>
+
+  <!-- Question Results -->
+  <div class="questions-review">
+    <h3>Chi tiết từng câu hỏi</h3>
+    
+    <div class="question-item" *ngFor="let question of result.questionResults; let i = index">
+      <div class="question-header">
+        <div class="question-info">
+          <span class="question-number">Câu {{ i + 1 }}</span>
+          <span class="question-type">{{ getQuestionTypeDisplay(question.questionType) }}</span>
+          <span class="question-points">{{ question.points }} điểm</span>
+        </div>
+        <div class="result-status" [ngClass]="question.isCorrect ? 'status-correct' : 'status-incorrect'">
+          <i class="fas" [ngClass]="question.isCorrect ? 'fa-check-circle' : 'fa-times-circle'"></i>
+          {{ question.isCorrect ? 'Đúng' : 'Sai' }}
+        </div>
+      </div>
+      
+      <div class="question-content">
+        <div class="question-text">
+          {{ question.questionText }}
+        </div>
+        
+        <div class="answer-section">
+          <div class="user-answer">
+            <strong>Câu trả lời của bạn:</strong>
+            <div class="answer-text" [ngClass]="question.isCorrect ? 'correct-answer' : 'incorrect-answer'">
+              {{ question.userAnswer || 'Không có câu trả lời' }}
+            </div>
+          </div>
+          
+          <div class="correct-answer" *ngIf="!question.isCorrect && question.correctAnswer !== question.userAnswer">
+            <strong>Đáp án đúng:</strong>
+            <div class="answer-text correct">
+              {{ question.correctAnswer }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-container" *ngIf="isLoading">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Đang tải...</span>
+  </div>
+  <p>Đang tải kết quả...</p>
+</div>
+
+<!-- No Result -->
+<div class="no-result" *ngIf="!isLoading && !result">
+  <div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    Không thể tải kết quả bài thi. Vui lòng thử lại sau.
+  </div>
+  <button class="btn btn-primary" (click)="goBack()">Quay lại</button>
+</div>

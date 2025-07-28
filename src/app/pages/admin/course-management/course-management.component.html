@@ -1,0 +1,225 @@
+
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+  <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+    
+    <div class="courses-wrapper">
+    <h1>Courses</h1>
+    <div class="search-create-row">
+      <input class="search-input" placeholder="Search" type="search" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()"/>
+      <select class="category-filter" [(ngModel)]="selectedCategoryFilter" (ngModelChange)="onFilterChange()">
+        <option value="0">All Categories</option>
+        <option *ngFor="let category of categories" [value]="category.categoryId">
+          {{ category.name }}
+        </option>
+      </select>
+      <button (click)="navigateToLessonManagement()"
+              class="lesson-management-btn">
+        Quản lý bài học
+      </button>
+      <button (click)="isCreating = !isCreating"
+              class="create-btn-green ml-auto">
+        {{ isCreating ? 'Close' : 'Create' }}
+      </button>
+    </div>
+    <div class="courses-container">
+      <div class="create-btn-wrapper">
+        <div class="bg-[#cce6ff] rounded-md p-4 space-y-4">
+          <!-- Form tạo khóa học -->
+          <div *ngIf="isCreating">
+            <div class="modern-modal-overlay" (click)="cancelCreating()"></div>
+            <div class="modern-modal-container">
+              <div class="modern-modal">
+                <div class="modal-header">
+                  <h2 class="modal-title">Tạo khóa học mới</h2>
+                  <button class="modal-close-btn" (click)="cancelCreating()">×</button>
+                </div>
+                <div class="modal-content">
+                  <div class="form-group">
+                    <label>Tên khóa học</label>
+                    <input [(ngModel)]="courseForm.title" type="text" placeholder="Nhập tên khóa học" />
+                  </div>
+                  <div class="form-group">
+                    <label>Mô tả</label>
+                    <textarea [(ngModel)]="courseForm.description" placeholder="Nhập mô tả khóa học" rows="3"></textarea>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Danh mục</label>
+                      <select [(ngModel)]="courseForm.categoryId">
+                        <option value="" disabled>Chọn danh mục</option>
+                        <option *ngFor="let category of categories" [value]="category.categoryId">
+                          {{ category.name }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Giảng viên</label>
+                      <select [(ngModel)]="courseForm.instructorId">
+                        <option value="" disabled>Chọn giảng viên</option>
+                        <option *ngFor="let instructor of instructors" [value]="instructor.userId">
+                          {{ instructor.fullName }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Trạng thái</label>
+                      <select [(ngModel)]="courseForm.status">
+                        <option value="" disabled>Chọn trạng thái</option>
+                        <option value="draft">Bản nháp</option>
+                        <option value="published">Đã xuất bản</option>
+                        <option value="archived">Lưu trữ</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Giá (VNĐ)</label>
+                      <input [(ngModel)]="courseForm.price" type="number" placeholder="0" step="0.01" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Hình ảnh khóa học</label>
+                    <div class="file-upload-wrapper">
+                      <input type="file" (change)="onFileSelected($event)" accept="image/*" class="file-input" id="file-upload" />
+                      <label for="file-upload" class="file-upload-btn">Chọn hình ảnh</label>
+                    </div>
+                    <div *ngIf="imagePreviewUrl" class="image-preview">
+                      <img [src]="imagePreviewUrl" alt="Preview" />
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button (click)="cancelCreating()" class="btn-secondary">Hủy</button>
+                  <button (click)="submitCourse()" class="btn-primary">Tạo khóa học</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="course-grid">
+            <div *ngFor="let course of getPagedCourses()" class="course-card">
+              <img *ngIf="course.thumbnailUrl"
+                   [src]="'http://localhost:8080/images/courses/' + course.thumbnailUrl"
+                   alt="Thumbnail" />
+              <div class="card-content">
+                    <p class="card-title">{{ course.title }}</p>
+                <!-- <div class="flex items-center gap-2">
+                  <img [src]="course.instructorImage" alt="Instructor"
+                       class="w-6 h-6 rounded-full instructor-img" />
+                </div> -->
+                <button (click)="viewCourse(course)" class="details-btn">Xem chi tiết</button>
+              </div>
+            </div>
+          </div>
+        </div>
+          <!-- Pagination controls -->
+          <div *ngIf="getTotalPages() > 1" class="pagination">
+            <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+              &lt;
+            </button>
+            <ng-container *ngFor="let page of [].constructor(getTotalPages()); let i = index">
+              <button (click)="goToPage(i + 1)"
+                      [class.active]="currentPage === (i + 1)"
+                      [disabled]="currentPage === (i + 1)">
+                {{ i + 1 }}
+              </button>
+            </ng-container>
+            <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === getTotalPages()">
+              &gt;
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Kết thúc courses-container -->
+    </div>
+    <!-- Modal xem chi tiết -->
+    <div *ngIf="isViewing && selectedCourse">
+      <div class="modern-modal-overlay" (click)="cancelEditing()"></div>
+      <div class="modern-modal-container">
+        <div class="modern-modal">
+          <div class="modal-header">
+            <h2 class="modal-title">Chi tiết khóa học</h2>
+            <button class="modal-close-btn" (click)="cancelEditing()">×</button>
+          </div>
+          <div class="modal-content">
+            <div class="form-group">
+              <label>Tên khóa học</label>
+              <input [(ngModel)]="selectedCourse.title" type="text" placeholder="Nhập tên khóa học" />
+            </div>
+            <div class="form-group">
+              <label>Mô tả</label>
+              <textarea [(ngModel)]="selectedCourse.description" placeholder="Nhập mô tả khóa học" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Danh mục</label>
+                <select [(ngModel)]="selectedCourse.categoryId">
+                  <option *ngFor="let category of categories" [value]="category.categoryId">
+                    {{ category.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Giảng viên</label>
+                <select [(ngModel)]="selectedCourse.instructorId">
+                  <option *ngFor="let instructor of instructors" [value]="instructor.userId">
+                    {{ instructor.fullName }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Trạng thái</label>
+                <select [(ngModel)]="selectedCourse.status">
+                  <option value="draft">Bản nháp</option>
+                  <option value="published">Đã xuất bản</option>
+                  <option value="archived">Lưu trữ</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Giá (VNĐ)</label>
+                <input [(ngModel)]="selectedCourse.price" type="number" placeholder="0" step="0.01" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Hình ảnh khóa học</label>
+              <div class="file-upload-wrapper">
+                <input type="file" (change)="onFileSelected($event)" accept="image/*" class="file-input" id="file-upload-edit" />
+                <label for="file-upload-edit" class="file-upload-btn">Chọn hình ảnh mới</label>
+              </div>
+              <div *ngIf="imagePreviewUrl" class="image-preview">
+                <img [src]="imagePreviewUrl" alt="Preview" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button (click)="deleteSelectedCourse()" class="btn-danger">Xóa khóa học</button>
+            <div class="modal-footer-right">
+              <button (click)="cancelEditing()" class="btn-secondary">Hủy</button>
+              <button (click)="updateCourse()" class="btn-primary">Cập nhật</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Component -->
+<app-notification></app-notification>
+
