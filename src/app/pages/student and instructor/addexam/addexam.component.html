@@ -96,6 +96,15 @@
                 <textarea id="description" name="description" placeholder="Mô tả bổ sung" [(ngModel)]="examData.description"></textarea>
               </div>
               <div>
+                <label for="module-select">Module (tùy chọn)</label>
+                <select id="module-select" name="moduleId" [(ngModel)]="selectedModuleId" (change)="onModuleSelectionChange()">
+                  <option value="">-- Chọn Module (có thể bỏ trống) --</option>
+                  <option *ngFor="let module of modules" [value]="module.moduleId">
+                    {{ module.orderNumber }}. {{ module.title }}
+                  </option>
+                </select>
+              </div>
+              <div>
                 <label for="quiz-type">Loại đề thi *</label>
                 <select id="quiz-type" name="quizType" [(ngModel)]="examData.quizType" (change)="onQuizTypeChange()" required>
                   <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>

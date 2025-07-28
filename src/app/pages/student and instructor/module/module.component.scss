@@ -1955,6 +1955,126 @@ input[type="file"]:hover {
   }
 }
 
+/* Video and Quiz Styling */
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 16px 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.video-list, .quiz-list {
+  margin-top: 16px;
+}
+
+.video-item, .quiz-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.video-item.clickable, .quiz-item.clickable {
+  cursor: pointer;
+}
+
+.video-item.clickable:hover, .quiz-item.clickable:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.video-info, .quiz-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.video-icon, .quiz-icon {
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.video-details, .quiz-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.video-title, .quiz-title {
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.video-description, .quiz-description {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.video-meta, .quiz-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.video-duration {
+  font-size: 11px;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.quiz-type-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.quiz-type-badge.type-multiple_choice {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.quiz-type-badge.type-essay {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.quiz-time {
+  font-size: 11px;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.video-status, .quiz-status {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
 /* Responsive modal */
 @media (max-width: 768px) {
   .modal-content {

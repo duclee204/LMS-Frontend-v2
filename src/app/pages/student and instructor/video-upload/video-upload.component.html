@@ -35,6 +35,7 @@
         id="courseId"
         name="courseId"
         [(ngModel)]="courseId"
+        (change)="onCourseChange()"
         required
         [disabled]="loading || courses.length === 0">
         <option value="" disabled>
@@ -46,6 +47,23 @@
       </select>
       <small *ngIf="courses.length === 0 && !loading" class="help-text">
         Chỉ instructor mới có thể upload video cho khóa học của mình.
+      </small>
+    </div>
+    <div class="form-group">
+      <label for="moduleId">Module (tùy chọn)</label>
+      <select
+        id="moduleId"
+        name="moduleId"
+        [(ngModel)]="moduleId"
+        (change)="onModuleChange()"
+        [disabled]="!courseId || modules.length === 0">
+        <option value="">-- Chọn Module (có thể bỏ trống) --</option>
+        <option *ngFor="let module of modules" [value]="module.moduleId">
+          {{ module.orderNumber }}. {{ module.title }}
+        </option>
+      </select>
+      <small class="help-text">
+        Chọn module để video thuộc về module cụ thể, hoặc để trống nếu video không thuộc module nào.
       </small>
     </div>
     <div class="form-group">

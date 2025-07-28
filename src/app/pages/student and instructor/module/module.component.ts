@@ -7,6 +7,7 @@ import { ContentService, ContentDto, ContentItem } from '../../../services/conte
 import { CourseService, Course } from '../../../services/course.service';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ModuleContentService, VideoItem, QuizItem, ModuleProgress } from '../../../services/module-content.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { NotificationComponent } from '../../../components/notification/notification.component';
@@ -46,6 +47,12 @@ export class ModuleComponent {
   public editingContent: ContentItem | null = null;
   public selectedModuleId: number | null = null;
   public showModuleSelector = false; // True when modal is opened from upload area
+  
+  // Module content properties
+  public moduleVideos: { [moduleId: number]: VideoItem[] } = {};
+  public moduleQuizzes: { [moduleId: number]: QuizItem[] } = {};
+  public moduleProgress: { [moduleId: number]: ModuleProgress } = {};
+  
   public newModule = {
     title: '',
     description: '',
@@ -71,6 +78,7 @@ export class ModuleComponent {
     private courseService: CourseService, // 👈 Thêm course service
     public sessionService: SessionService, // 👈 Thêm session service
     private notificationService: NotificationService, // 👈 Thêm notification service
+    private moduleContentService: ModuleContentService, // 👈 Thêm module content service
     private cdr: ChangeDetectorRef, // 👈 Thêm change detector
     @Inject(PLATFORM_ID) private platformId: Object
   ) { }
@@ -392,6 +400,11 @@ export class ModuleComponent {
         }
       });
     }
+    
+    // Load videos, quizzes, and progress for all users
+    this.loadModuleVideos(module);
+    this.loadModuleQuizzes(module);
+    this.loadModuleProgress(module);
   }
 
   // Process module contents based on user role
@@ -425,6 +438,60 @@ export class ModuleComponent {
           console.log('Student cannot access module contents - this may be normal for module:', module.title);
           // Don't show error alert to students for permission issues
         }
+      }
+    });
+  }
+
+  // Load videos for a module
+  loadModuleVideos(module: ModuleItem): void {
+    if (!module.moduleId) return;
+    
+    console.log('🎥 Loading videos for module:', module.moduleId);
+    
+    this.moduleContentService.getVideosByModule(module.moduleId).subscribe({
+      next: (videos: any[]) => {
+        console.log('✅ Videos loaded successfully:', videos);
+        module.videos = videos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading module videos:', err);
+        module.videos = [];
+      }
+    });
+  }
+
+  // Load quizzes for a module
+  loadModuleQuizzes(module: ModuleItem): void {
+    if (!module.moduleId) return;
+    
+    console.log('📝 Loading quizzes for module:', module.moduleId);
+    
+    this.moduleContentService.getQuizzesByModule(module.moduleId).subscribe({
+      next: (quizzes: any[]) => {
+        console.log('✅ Quizzes loaded successfully:', quizzes);
+        module.quizzes = quizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading module quizzes:', err);
+        module.quizzes = [];
+      }
+    });
+  }
+
+  // Load module progress for current user
+  loadModuleProgress(module: ModuleItem): void {
+    if (!module.moduleId || !this.sessionService.isStudent()) return;
+    
+    console.log('📊 Loading progress for module:', module.moduleId);
+    
+    this.moduleContentService.getModuleProgress(module.moduleId).subscribe({
+      next: (progress: any) => {
+        console.log('✅ Progress loaded successfully:', progress);
+        module.progress = progress;
+      },
+      error: (err: any) => {
+        console.log('ℹ️ No progress found for module:', module.moduleId);
+        module.progress = null;
       }
     });
   }
@@ -1512,6 +1579,59 @@ export class ModuleComponent {
       queryParams: { 
         courseId: this.courseId,
         courseName: this.courseInfo?.title || `Course ${this.courseId}`
+      }
+    });
+  }
+
+  // Video-related methods
+  trackVideoById(index: number, video: any): any {
+    return video.videoId || index;
+  }
+
+  viewVideo(video: any): void {
+    console.log('🎥 Viewing video:', video.title);
+    if (video.fileUrl) {
+      const fullUrl = `http://localhost:8080${video.fileUrl}`;
+      window.open(fullUrl, '_blank');
+    } else {
+      alert('Video không khả dụng.');
+    }
+  }
+
+  formatDuration(duration: number): string {
+    if (!duration) return '';
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Quiz-related methods
+  trackQuizById(index: number, quiz: any): any {
+    return quiz.quizId || index;
+  }
+
+  canAccessQuiz(module: ModuleItem, quiz: any): boolean {
+    // If no progress data, allow access for instructors/admins
+    if (!module.progress) {
+      return this.canManageContent();
+    }
+    
+    // For students, check if test is unlocked
+    return module.progress.testUnlocked || this.canManageContent();
+  }
+
+  viewQuiz(module: ModuleItem, quiz: any): void {
+    if (!this.canAccessQuiz(module, quiz)) {
+      alert('Bạn cần hoàn thành nội dung và video trước khi có thể làm bài kiểm tra này.');
+      return;
+    }
+    
+    console.log('📝 Viewing quiz:', quiz.title);
+    // Navigate to quiz page
+    this.router.navigate(['/exam'], {
+      queryParams: { 
+        courseId: this.courseId,
+        quizId: quiz.quizId
       }
     });
   }

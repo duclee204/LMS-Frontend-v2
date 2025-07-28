@@ -176,6 +176,52 @@
                 <div class="no-contents" *ngIf="!item.contents || item.contents.length === 0">
                   <p>Chưa có nội dung nào trong module này.</p>
                 </div>
+
+                <!-- Module Videos -->
+                <div class="video-list" *ngIf="item.videos && item.videos.length > 0">
+                  <h4 class="section-title">📹 Videos</h4>
+                  <div *ngFor="let video of item.videos; trackBy: trackVideoById" class="video-item clickable" (click)="viewVideo(video)">
+                    <div class="video-info">
+                      <span class="video-icon">🎥</span>
+                      <div class="video-details">
+                        <span class="video-title">{{ video.title }}</span>
+                        <span class="video-description" *ngIf="video.description">{{ video.description }}</span>
+                        <div class="video-meta">
+                          <span class="video-duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="video-status" *ngIf="item.progress">
+                      <i class="fas fa-check-circle" *ngIf="item.progress.videoCompleted" style="color: #2ecc71;" title="Completed"></i>
+                      <i class="fas fa-play-circle" *ngIf="!item.progress.videoCompleted" style="color: #3498db;" title="Not completed"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Module Quizzes -->
+                <div class="quiz-list" *ngIf="item.quizzes && item.quizzes.length > 0">
+                  <h4 class="section-title">📝 Tests</h4>
+                  <div *ngFor="let quiz of item.quizzes; trackBy: trackQuizById" class="quiz-item" [ngClass]="{'clickable': canAccessQuiz(item, quiz), 'disabled': !canAccessQuiz(item, quiz)}" (click)="viewQuiz(item, quiz)">
+                    <div class="quiz-info">
+                      <span class="quiz-icon">📋</span>
+                      <div class="quiz-details">
+                        <span class="quiz-title">{{ quiz.title }}</span>
+                        <span class="quiz-description" *ngIf="quiz.description">{{ quiz.description }}</span>
+                        <div class="quiz-meta">
+                          <span class="quiz-type-badge" [ngClass]="'type-' + quiz.quizType.toLowerCase()">
+                            {{ quiz.quizType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}
+                          </span>
+                          <span class="quiz-time" *ngIf="quiz.timeLimit">{{ quiz.timeLimit }} phút</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="quiz-status">
+                      <i class="fas fa-check-circle" *ngIf="item.progress && item.progress.testCompleted" style="color: #2ecc71;" title="Completed"></i>
+                      <i class="fas fa-lock" *ngIf="!canAccessQuiz(item, quiz)" style="color: #e74c3c;" title="Locked"></i>
+                      <i class="fas fa-play-circle" *ngIf="canAccessQuiz(item, quiz) && (!item.progress || !item.progress.testCompleted)" style="color: #3498db;" title="Available"></i>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

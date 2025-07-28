@@ -13,6 +13,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SessionService } from '../../../services/session.service';
 import { CourseService, Course } from '../../../services/course.service';
+import { ModuleService, ModuleItem } from '../../../services/module.service';
 import { ExamService } from '../../../services/exam.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
@@ -22,6 +23,7 @@ export interface ExamData {
   title: string;
   description: string;
   courseId: number;
+  moduleId?: number;
   quizType: 'MULTIPLE_CHOICE' | 'ESSAY';
   timeLimit: number;
   hasTimeLimit: boolean;
@@ -46,6 +48,8 @@ export class AddExamComponent implements OnInit, AfterViewInit {
   public showProfileDropdown = false;
   public courseId: number | null = null;
   public courseInfo: Course | null = null;
+  public modules: ModuleItem[] = [];
+  public selectedModuleId: number | null = null;
   public activeTab: 'basic' | 'questions' | 'answers' = 'basic';
 
   // Profile properties
@@ -86,6 +90,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     private router: Router,
     private route: ActivatedRoute,
     private courseService: CourseService,
+    private moduleService: ModuleService,
     private examService: ExamService,
     public sessionService: SessionService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -132,6 +137,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
             thumbnailUrl: ''
           };
           console.log('✅ Using course name from params:', decodeURIComponent(courseName));
+          
+          // Still need to load modules even if we have course name
+          this.loadModules();
         } else if (this.courseId) {
           console.log('🔄 No courseName in params, trying API fallback...');
           this.loadCourseInfo();
@@ -155,6 +163,9 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       next: (course: Course) => {
         this.courseInfo = course;
         console.log('✅ Course info loaded successfully:', course.title);
+        
+        // Load modules for this course
+        this.loadModules();
       },
       error: (err: any) => {
         console.error('❌ Error loading course info:', err);
@@ -171,8 +182,39 @@ export class AddExamComponent implements OnInit, AfterViewInit {
           thumbnailUrl: ''
         };
         console.log('🔧 Using fallback course title:', `Course ${this.courseId}`);
+        
+        // Still try to load modules
+        this.loadModules();
       }
     });
+  }
+
+  loadModules(): void {
+    if (!this.courseId) return;
+
+    console.log('🔄 Loading modules for courseId:', this.courseId);
+
+    this.moduleService.getModulesByCourse(this.courseId).subscribe({
+      next: (modules: ModuleItem[]) => {
+        this.modules = modules.sort((a, b) => a.orderNumber - b.orderNumber);
+        console.log('✅ Modules loaded successfully:', this.modules.length, 'modules');
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading modules:', err);
+        this.modules = [];
+      }
+    });
+  }
+
+  // Handle module selection
+  onModuleSelectionChange(): void {
+    if (this.selectedModuleId) {
+      this.examData.moduleId = this.selectedModuleId;
+      console.log('📝 Module selected:', this.selectedModuleId);
+    } else {
+      this.examData.moduleId = undefined;
+      console.log('📝 Module selection cleared');
+    }
   }
 
   // Tab management
@@ -296,6 +338,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       title: this.examData.title.trim(),
       description: this.examData.description.trim() || null,
       courseId: this.examData.courseId,
+      moduleId: this.examData.moduleId || null,
       quizType: this.examData.quizType,
       timeLimit: this.examData.hasTimeLimit ? this.examData.timeLimit : null,
       shuffleAnswers: this.examData.shuffleAnswers,
@@ -308,6 +351,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     console.log('🔧 Building exam DTO:');
     console.log('📝 Title:', dto.title);
     console.log('📚 CourseId:', dto.courseId);
+    console.log('📂 ModuleId:', dto.moduleId);
     console.log('🧪 QuizType:', dto.quizType);
     console.log('📖 Description:', dto.description);
     console.log('⏱️ TimeLimit:', dto.timeLimit);

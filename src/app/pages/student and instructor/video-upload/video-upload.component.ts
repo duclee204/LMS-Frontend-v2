@@ -5,6 +5,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { SessionService } from '../../../services/session.service';
+import { ModuleService, ModuleItem } from '../../../services/module.service';
 import { NotificationService } from '../../../services/notification.service';
 import { NotificationComponent } from '../../../components/notification/notification.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
@@ -24,7 +25,9 @@ export class VideoUploadComponent implements OnInit {
   selectedFile: File | null = null;
   successMessage = false;
   courseId: number | null = null; // Dynamic courseId based on user selection
+  moduleId: number | null = null; // Selected module ID
   courses: any[] = []; // Danh sách courses của user
+  modules: ModuleItem[] = []; // Danh sách modules của course đã chọn
   loading = false;
   uploadProgress = 0; // Progress bar
   maxFileSize = 500 * 1024 * 1024; // 500MB in bytes
@@ -39,6 +42,7 @@ export class VideoUploadComponent implements OnInit {
     private router: Router, 
     private apiService: ApiService,
     private sessionService: SessionService,
+    private moduleService: ModuleService,
     private userService: UserService,
     private notificationService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -93,6 +97,7 @@ export class VideoUploadComponent implements OnInit {
         // Tự động chọn course đầu tiên nếu có
         if (courses.length > 0) {
           this.courseId = courses[0].courseId;
+          this.loadModules(); // Load modules for the first course
         }
         this.loading = false;
         console.log('Loaded courses:', courses);
@@ -109,6 +114,39 @@ export class VideoUploadComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // Load modules when course is selected
+  loadModules(): void {
+    if (!this.courseId) {
+      this.modules = [];
+      return;
+    }
+
+    console.log('🔄 Loading modules for courseId:', this.courseId);
+
+    this.moduleService.getModulesByCourse(this.courseId).subscribe({
+      next: (modules: ModuleItem[]) => {
+        this.modules = modules.sort((a, b) => a.orderNumber - b.orderNumber);
+        console.log('✅ Modules loaded successfully:', this.modules.length, 'modules');
+      },
+      error: (err: any) => {
+        console.error('❌ Error loading modules:', err);
+        this.modules = [];
+      }
+    });
+  }
+
+  // Handle course selection change
+  onCourseChange(): void {
+    console.log('📚 Course changed to:', this.courseId);
+    this.moduleId = null; // Reset module selection
+    this.loadModules(); // Load modules for new course
+  }
+
+  // Handle module selection change
+  onModuleChange(): void {
+    console.log('📂 Module changed to:', this.moduleId);
   }
 
   onFileSelected(event: Event): void {
@@ -152,6 +190,9 @@ export class VideoUploadComponent implements OnInit {
     formData.append('title', this.title);
     formData.append('description', this.description);
     formData.append('courseId', this.courseId.toString());
+    if (this.moduleId) {
+      formData.append('moduleId', this.moduleId.toString());
+    }
 
     this.loading = true;
 

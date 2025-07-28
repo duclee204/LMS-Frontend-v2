@@ -13,6 +13,9 @@ export interface ModuleItem {
   showDropdown?: boolean;
   expanded?: boolean;
   contents?: ContentItem[];
+  videos?: any[];
+  quizzes?: any[];
+  progress?: any;
 }
 
 export interface ModuleDto {
