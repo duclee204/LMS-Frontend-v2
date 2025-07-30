@@ -27,7 +27,7 @@ export class UserService {
       if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
         return {
           username: 'User',
-          avatarUrl: this.getDefaultAvatar(),
+          avatarUrl: '', // Don't use default avatar, return empty string
           role: 'student'
         };
       }
@@ -39,9 +39,20 @@ export class UserService {
         // Chuẩn hóa role - loại bỏ prefix ROLE_
         const normalizedRole = role.replace('ROLE_', '');
         
+        // Xử lý avatar URL từ token
+        let avatarUrl = payload.avatarUrl;
+        if (avatarUrl && !avatarUrl.startsWith('http')) {
+          // Nếu avatar URL không có base URL, thêm vào
+          if (avatarUrl.startsWith('/')) {
+            avatarUrl = `http://localhost:8080${avatarUrl}`;
+          } else {
+            avatarUrl = `http://localhost:8080/uploads/avatars/${avatarUrl}`;
+          }
+        }
+ 
         return {
-          username: payload.sub || 'User',
-          avatarUrl: this.getDefaultAvatar(), // Sử dụng avatar mặc định
+          username: payload.fullName || payload.sub || 'User',
+          avatarUrl: avatarUrl || '', // Don't use default avatar, return empty string
           role: normalizedRole
         };
       }
@@ -51,14 +62,14 @@ export class UserService {
     
     return {
       username: 'User',
-      avatarUrl: this.getDefaultAvatar(),
+      avatarUrl: '', // Don't use default avatar, return empty string
       role: 'student'
     };
   }
 
   // ✅ Avatar mặc định từ Backend  
   private getDefaultAvatar(): string {
-    return 'http://localhost:8080/images/avatars/default.png'; // ✅ Sử dụng mapping /images/avatars/** từ WebMvcConfig
+    return 'http://localhost:8080/uploads/avatars/default.png'; // ✅ Sử dụng đường dẫn uploads thay vì images
   }
 
   // ✅ Lấy danh sách người dùng
@@ -66,9 +77,58 @@ export class UserService {
     return this.http.get<User[]>(`${this.apiUrl}/list`);
   }
 
+  // ✅ Lấy thông tin user theo ID
+  getUserById(id: number): Observable<User> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    return this.http.get<User>(`${this.apiUrl}/${id}`, { headers });
+  }
+
+  // ✅ Lấy thông tin user hiện tại (từ token)
+  getCurrentUser(): Observable<User> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    // Thử endpoint /me hoặc /current trước, nếu không có thì dùng endpoint khác
+    return this.http.get<User>(`${this.apiUrl}/me`, { headers });
+  }
+
+  // ✅ Kiểm tra email có tồn tại không
+  checkEmailExists(email: string, excludeUserId?: number): Observable<{exists: boolean}> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    let url = `${this.apiUrl}/check-email?email=${encodeURIComponent(email)}`;
+    if (excludeUserId) {
+      url += `&excludeUserId=${excludeUserId}`;
+    }
+    return this.http.get<{exists: boolean}>(url, { headers });
+  }
+
+  // ✅ Kiểm tra username có tồn tại không
+  checkUsernameExists(username: string, excludeUserId?: number): Observable<{exists: boolean}> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    let url = `${this.apiUrl}/check-username?username=${encodeURIComponent(username)}`;
+    if (excludeUserId) {
+      url += `&excludeUserId=${excludeUserId}`;
+    }
+    return this.http.get<{exists: boolean}>(url, { headers });
+  }
+
   // ✅ Cập nhật người dùng với FormData (kèm file avatar)
   updateUserWithForm(id: number, formData: FormData): Observable<any> {
-    return this.http.put(`${this.apiUrl}/update/${id}`, formData);
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    return this.http.put(`${this.apiUrl}/update/${id}`, formData, { headers });
   }
 
   // (Optional) Nếu bạn vẫn muốn hỗ trợ PUT dạng JSON thuần

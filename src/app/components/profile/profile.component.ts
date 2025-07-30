@@ -1,10 +1,14 @@
 import { Component, Input, Output, EventEmitter, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { ProfileUpdateComponent } from '../profile-update/profile-update.component';
+import { AvatarService } from '../../services/avatar.service';
+import { UserService } from '../../services/user.service';
+import { SessionService } from '../../services/session.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ProfileUpdateComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
@@ -19,20 +23,87 @@ export class ProfileComponent implements OnInit {
   @Output() logout = new EventEmitter<void>();
 
   profileDropdownVisible = false;
+  showProfileUpdateModal = false;
 
-  // Avatar mặc định từ Backend
-  private readonly DEFAULT_AVATAR = 'http://localhost:8080/images/avatars/default.png';
-
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    private userService: UserService,
+    private sessionService: SessionService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private avatarService: AvatarService
+  ) {}
 
   ngOnInit() {
-    // Nếu avatarUrl không được truyền vào hoặc rỗng, sử dụng avatar mặc định
-    if (!this.avatarUrl || this.avatarUrl.trim() === '') {
-      this.avatarUrl = this.DEFAULT_AVATAR;
-    } else if (!this.avatarUrl.startsWith('http')) {
-      // Nếu là relative path từ backend, thêm base URL
-      this.avatarUrl = 'http://localhost:8080' + this.avatarUrl;
+    this.loadUserFromAPI();
+
+    const sessionAvatar = this.sessionService.getAvatarUrl();
+    if (sessionAvatar) {
+      this.avatarUrl = sessionAvatar;
+    } else if (!this.avatarUrl || this.avatarUrl.trim() === '') {
+      this.avatarUrl = this.getDefaultAvatar();
+    } else {
+      const processedUrl = this.avatarService.processAvatarUrl(this.avatarUrl);
+      this.avatarUrl = processedUrl || this.getDefaultAvatar();
+      this.sessionService.setAvatarUrl(this.avatarUrl);
     }
+  }
+
+  private loadUserFromAPI() {
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        this.userService.getCurrentUser().subscribe({
+          next: (user) => {
+            this.username = user.fullName || user.username || this.username;
+            this.role = user.role || this.role;
+
+            if (user.avatarUrl) {
+              const processedUrl = this.avatarService.processAvatarUrl(user.avatarUrl);
+              this.avatarUrl = processedUrl || this.getDefaultAvatar();
+              this.sessionService.setAvatarUrl(this.avatarUrl);
+            } else {
+              this.avatarUrl = this.getDefaultAvatar();
+              this.sessionService.setAvatarUrl(this.avatarUrl);
+            }
+          },
+          error: () => {
+            this.loadUserFromToken();
+          }
+        });
+      } else {
+        this.avatarUrl = this.getDefaultAvatar();
+        this.sessionService.setAvatarUrl(this.avatarUrl);
+      }
+    }
+  }
+
+  private loadUserFromToken() {
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          this.username = payload.fullName || payload.sub || this.username;
+          this.role = payload.role || this.role;
+
+          if (payload.avatarUrl) {
+            const processedUrl = this.avatarService.processAvatarUrl(payload.avatarUrl);
+            this.avatarUrl = processedUrl || this.getDefaultAvatar();
+            this.sessionService.setAvatarUrl(this.avatarUrl);
+          } else {
+            this.avatarUrl = this.getDefaultAvatar();
+            this.sessionService.setAvatarUrl(this.avatarUrl);
+          }
+        } catch (error) {
+          console.error('Token decode error:', error);
+          this.avatarUrl = this.getDefaultAvatar();
+          this.sessionService.setAvatarUrl(this.avatarUrl);
+        }
+      }
+    }
+  }
+
+  private getDefaultAvatar(): string {
+    return 'assets/default-avatar.png';
   }
 
   toggleProfileDropdown(event: Event) {
@@ -42,6 +113,26 @@ export class ProfileComponent implements OnInit {
 
   updateProfile() {
     this.profileDropdownVisible = false;
+    this.showProfileUpdateModal = true;
+  }
+
+  closeProfileUpdateModal() {
+    this.showProfileUpdateModal = false;
+  }
+
+  onProfileUpdateSuccess(updatedUser?: any) {
+    this.showProfileUpdateModal = false;
+
+    if (updatedUser?.avatarUrl) {
+      const processedUrl = this.avatarService.processAvatarUrl(updatedUser.avatarUrl);
+      this.avatarUrl = processedUrl || this.getDefaultAvatar();
+      this.sessionService.setAvatarUrl(this.avatarUrl);
+    }
+
+    if (updatedUser) {
+      this.username = updatedUser.fullName || updatedUser.username || this.username;
+    }
+
     this.profileUpdate.emit();
   }
 
@@ -50,8 +141,19 @@ export class ProfileComponent implements OnInit {
     this.logout.emit();
   }
 
-  // Đóng dropdown khi click outside
   closeDropdown() {
     this.profileDropdownVisible = false;
   }
+
+  getDisplayAvatar(): string {
+    const storedAvatar = this.sessionService.getAvatarUrl();
+    return storedAvatar && !storedAvatar.includes('default.png')
+      ? storedAvatar
+      : 'assets/default-avatar.png';
+  }
+
+  onAvatarError(event: any) {
+    event.target.src = 'assets/default-avatar.png';
+  }
+
 }

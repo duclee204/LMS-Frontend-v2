@@ -7,7 +7,10 @@
        (click)="toggleProfileDropdown($event)"
        (clickOutside)="closeDropdown()">
     <div class="profile-img-wrapper">
-      <img [src]="avatarUrl" [alt]="username + ' profile image'" />
+      <img [src]="getDisplayAvatar()" 
+           alt="User avatar" 
+           class="avatar-image"
+           (error)="onAvatarError($event)">
     </div>
     <div class="profile-info">
       <p class="profile-name">{{ username }}</p>
@@ -19,4 +22,11 @@
       <div class="dropdown-item" (click)="onLogout()">Đăng xuất</div>
     </div>
   </div>
+
+  <!-- Profile Update Modal -->
+  <app-profile-update 
+    *ngIf="showProfileUpdateModal"
+    (closeModal)="closeProfileUpdateModal()"
+    (updateSuccess)="onProfileUpdateSuccess($event)">
+  </app-profile-update>
 </div>

@@ -17,7 +17,6 @@ export class SessionService {
     private router: Router,
     private notificationService: NotificationService
   ) {
-    // Khởi tạo trạng thái đăng nhập
     this.initializeAuthState();
   }
 
@@ -28,7 +27,6 @@ export class SessionService {
       this.isLoggedInSubject.next(isValid);
       
       if (!isValid && token) {
-        // Token không hợp lệ, xóa nó
         localStorage.removeItem('token');
       }
     }
@@ -48,10 +46,7 @@ export class SessionService {
 
   public login(token: string): void {
     if (isPlatformBrowser(this.platformId)) {
-      // Clear any existing session
       this.logout(false);
-      
-      // Set new session
       localStorage.setItem('token', token);
       this.isLoggedInSubject.next(true);
       console.log('✅ Session established');
@@ -61,16 +56,14 @@ export class SessionService {
   public logout(showAlert: boolean = true): void {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('token');
-      // Xóa avatar session để lần đăng nhập tiếp theo chọn avatar mới
-      sessionStorage.removeItem('session_avatar');
+      sessionStorage.removeItem('session_avatar'); // Xóa avatar đã lưu
       this.isLoggedInSubject.next(false);
       console.log('👋 Session cleared');
-      
+
       if (showAlert) {
         this.notificationService.success('Đăng xuất thành công', 'Hẹn gặp lại bạn!');
       }
-      
-      // Delay 1 giây để hiển thị notification trước khi chuyển trang
+
       setTimeout(() => {
         this.router.navigate(['/login']);
       }, 1000);
@@ -113,7 +106,6 @@ export class SessionService {
 
   public isAdmin(): boolean {
     const role = this.getUserRole();
-    // Chuẩn hóa role - loại bỏ prefix ROLE_ nếu có
     const normalizedRole = role ? role.replace('ROLE_', '') : '';
     return normalizedRole === 'admin' || normalizedRole === 'ADMIN';
   }
@@ -136,5 +128,19 @@ export class SessionService {
       alert(message);
     }
     this.router.navigate(['/login']);
+  }
+
+  // ✅ Thêm phương thức quản lý avatar
+  public getAvatarUrl(): string | null {
+    if (isPlatformBrowser(this.platformId)) {
+      return sessionStorage.getItem('session_avatar');
+    }
+    return null;
+  }
+
+  public setAvatarUrl(url: string): void {
+    if (isPlatformBrowser(this.platformId)) {
+      sessionStorage.setItem('session_avatar', url);
+    }
   }
 }

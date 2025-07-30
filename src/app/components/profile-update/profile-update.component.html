@@ -1,0 +1,156 @@
+<div class="modal-overlay" (click)="cancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <i class="fas fa-user-edit"></i>
+        </div>
+        <div class="header-text">
+          <h2 class="modal-title">Cập nhật hồ sơ</h2>
+          <p class="modal-subtitle">Chỉnh sửa thông tin cá nhân của bạn</p>
+        </div>
+      </div>
+      <button type="button" (click)="cancel()" class="close-btn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="modal-body">
+      <div class="form-sections">
+        <!-- Avatar Section -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-image"></i>
+            Ảnh đại diện
+          </h3>
+          <div class="avatar-upload">
+            <div class="avatar-preview">
+              <img [src]="imagePreview || getAvatarUrl() || '/assets/images/default-avatar.png'" 
+                   alt="Avatar preview" 
+                   class="avatar-img"
+                   (error)="onAvatarError($event)">
+            </div>
+            <div class="upload-controls">
+              <label for="avatar" class="upload-btn">
+                <i class="fas fa-camera"></i>
+                Chọn ảnh mới
+              </label>
+              <input type="file" 
+                     id="avatar" 
+                     accept="image/*" 
+                     (change)="onFileSelected($event)" 
+                     class="file-input">
+            </div>
+          </div>
+        </div>
+
+        <!-- Basic Information Section -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Thông tin cơ bản
+          </h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="username" class="form-label">
+                <i class="fas fa-user-circle"></i>
+                Tên đăng nhập
+              </label>
+              <input 
+                type="text"
+                id="username" 
+                formControlName="username" 
+                class="form-input"
+                placeholder="Nhập tên đăng nhập">
+              <div class="error-message" *ngIf="profileForm.get('username')?.invalid && profileForm.get('username')?.touched">
+                <small *ngIf="profileForm.get('username')?.errors?.['required']">Tên đăng nhập là bắt buộc</small>
+                <small *ngIf="profileForm.get('username')?.errors?.['minlength']">Tên đăng nhập phải có ít nhất 3 ký tự</small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="email" class="form-label">
+                <i class="fas fa-envelope"></i>
+                Email
+              </label>
+              <input 
+                type="email"
+                id="email" 
+                formControlName="email" 
+                class="form-input"
+                placeholder="Nhập địa chỉ email">
+              <div class="error-message" *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+                <small *ngIf="profileForm.get('email')?.errors?.['required']">Email là bắt buộc</small>
+                <small *ngIf="profileForm.get('email')?.errors?.['email']">Email không hợp lệ</small>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="fullName" class="form-label">
+                <i class="fas fa-id-card"></i>
+                Họ và tên
+              </label>
+              <input 
+                type="text"
+                id="fullName" 
+                formControlName="fullName" 
+                class="form-input"
+                placeholder="Nhập họ và tên đầy đủ">
+              <div class="error-message" *ngIf="profileForm.get('fullName')?.invalid && profileForm.get('fullName')?.touched">
+                <small *ngIf="profileForm.get('fullName')?.errors?.['required']">Họ và tên là bắt buộc</small>
+                <small *ngIf="profileForm.get('fullName')?.errors?.['minlength']">Họ và tên phải có ít nhất 2 ký tự</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Section -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-lock"></i>
+            Mật khẩu (tùy chọn)
+          </h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="password" class="form-label">
+                <i class="fas fa-key"></i>
+                Mật khẩu mới
+              </label>
+              <input 
+                type="password"
+                id="password" 
+                formControlName="password" 
+                class="form-input"
+                placeholder="Để trống nếu không muốn đổi">
+            </div>
+
+            <div class="form-group">
+              <label for="confirmPassword" class="form-label">
+                <i class="fas fa-key"></i>
+                Xác nhận mật khẩu
+              </label>
+              <input 
+                type="password"
+                id="confirmPassword" 
+                formControlName="confirmPassword" 
+                class="form-input"
+                placeholder="Xác nhận mật khẩu mới">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" (click)="cancel()" class="btn-secondary" [disabled]="loading">
+          <i class="fas fa-times"></i>
+          Hủy
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="loading || profileForm.invalid">
+          <i class="fas fa-save" *ngIf="!loading"></i>
+          <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+          {{ loading ? 'Đang cập nhật...' : 'Cập nhật' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
