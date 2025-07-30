@@ -152,6 +152,9 @@
                       <i [class]="exam.isCompleted ? 'fas fa-check-circle' : 'fas fa-clock'"></i>
                       {{ exam.isCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành' }}
                     </span>
+                    <span *ngIf="exam.attempts && exam.attempts > 0" class="attempt-count">
+                      ({{ exam.attempts }} lần)
+                    </span>
                   </div>
                 </div>
               </div>

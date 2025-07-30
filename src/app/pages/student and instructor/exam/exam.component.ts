@@ -252,14 +252,17 @@ export class ExamComponent {
       if (exam.quizId) {
         this.examService.checkExamSubmission(exam.quizId).subscribe({
           next: (response: any) => {
-            if (response.success && response.hasSubmitted) {
-              console.log(`✅ Exam ${exam.quizId} completed:`, response.result);
+            if (response.success) {
+              console.log(`✅ Exam ${exam.quizId} status:`, response);
               
-              // Update exam with completion info
-              this.exams[index].isCompleted = true;
-              this.exams[index].completionDate = response.result?.submissionDate;
-              this.exams[index].score = response.result?.score;
-              this.exams[index].attempts = 1; // For now, assume 1 attempt
+              // Update exam with submission info
+              this.exams[index].isCompleted = response.hasSubmitted || false;
+              this.exams[index].attempts = response.attemptCount || 0;
+              
+              if (response.hasSubmitted && response.result) {
+                this.exams[index].completionDate = response.result.submissionDate;
+                this.exams[index].score = response.result.score;
+              }
               
               // Update filtered exams as well
               const filteredIndex = this.filteredExams.findIndex(e => e.quizId === exam.quizId);
@@ -565,25 +568,6 @@ export class ExamComponent {
     }
   }
 
-  navigateToAssignments(event?: Event): void {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    
-    console.log('🔄 Navigating to assignments...');
-    
-    if (this.courseId && this.courseInfo) {
-      this.router.navigate(['/assignments'], { 
-        queryParams: { 
-          courseId: this.courseId,
-          courseName: encodeURIComponent(this.courseInfo.title)
-        } 
-      });
-    } else {
-      console.error('❌ Cannot navigate to assignments: missing courseId or courseInfo');
-    }
-  }
 
   navigateToAnnouncements(event?: Event): void {
     if (event) {

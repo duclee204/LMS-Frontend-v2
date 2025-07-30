@@ -187,6 +187,12 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           // Normal response - either submitted or not submitted
           this.hasSubmitted = response.hasSubmitted || false;
           
+          // Update attempt information
+          if (response.attemptCount !== undefined) {
+            this.attemptNumber = (response.attemptCount || 0) + 1;
+            console.log('📊 Current attempt number:', this.attemptNumber);
+          }
+          
           if (this.hasSubmitted) {
             // User has already submitted, show result view
             this.examResult = response.result;
@@ -576,6 +582,12 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           this.hasSubmitted = true;
           this.examResult = response.result;
           
+          // Update attempt count if provided
+          if (response.attemptCount !== undefined) {
+            this.attemptNumber = response.attemptCount;
+            console.log('📊 Updated attempt count:', this.attemptNumber);
+          }
+          
           this.showAlert('Bài thi đã được nộp thành công!', 'success');
           
           // Show result if it's multiple choice
@@ -690,6 +702,35 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.router.navigate(['/exam']);
     }
+  }
+
+  // Retake exam (for multiple attempts)
+  retakeExam(): void {
+    if (!this.examData?.allowMultipleAttempts) {
+      this.showAlert('Bài thi này không cho phép làm lại', 'warning');
+      return;
+    }
+
+    // Reset exam state
+    this.isExamStarted = false;
+    this.isExamCompleted = false;
+    this.hasSubmitted = false;
+    this.currentQuestionIndex = 0;
+    this.examResult = null;
+    this.timeRemaining = 0;
+
+    // Increment attempt number
+    this.attemptNumber++;
+
+    // Clear timer if exists
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+
+    // Reload exam data to get fresh questions
+    this.loadExamData();
+
+    this.showAlert('Bắt đầu lần làm mới', 'info');
   }
 
   // Navigation methods

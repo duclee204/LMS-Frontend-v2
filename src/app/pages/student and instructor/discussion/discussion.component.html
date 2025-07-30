@@ -80,7 +80,7 @@
                 </div>
                 
                 <div class="discussion-content">
-                  {{ discussion.content | slice:0:150 }}
+                  <div [innerHTML]="(discussion.content | slice:0:150) | markdown"></div>
                   <span *ngIf="discussion.content.length > 150">...</span>
                 </div>
                 
@@ -187,10 +187,10 @@
           </div>
 
           <!-- Target User (for private discussions) -->
-          <!-- For Instructors: Select from students -->
-          <div class="form-group" *ngIf="newDiscussion.type === 'PRIVATE' && isInstructorRole()">>
+          <!-- For Instructors: Select multiple students -->
+          <div class="form-group" *ngIf="newDiscussion.type === 'PRIVATE' && isInstructorRole()">
             <div class="label-with-info">
-              <label for="targetUser">Gửi đến sinh viên:</label>
+              <label>Gửi đến sinh viên:</label>
               <div class="member-info">
                 <span class="member-count">{{ courseMembers.length }} sinh viên</span>
                 <button type="button" 
@@ -201,20 +201,35 @@
                 </button>
               </div>
             </div>
-            <select id="targetUser" 
-                    name="targetUser" 
-                    [(ngModel)]="newDiscussion.targetUserId" 
-                    class="form-control">
-              <option [ngValue]="null">
-                {{ courseMembers.length === 0 ? 'Đang tải sinh viên...' : 'Chọn sinh viên...' }}
-              </option>
-              <option *ngFor="let member of courseMembers" [ngValue]="member.userId">
-                {{ member.fullName }} ({{ getDisplayRole(member.role) }})
-              </option>
-            </select>
-            <small class="form-text text-muted" *ngIf="courseMembers.length === 0">
-              Không tìm thấy sinh viên. Hãy thử tải lại.
-            </small>
+            
+            <div class="students-selection" *ngIf="courseMembers.length > 0">
+              <div class="selected-summary" *ngIf="selectedStudentIds.length > 0">
+                <strong>Đã chọn {{ selectedStudentIds.length }} sinh viên:</strong>
+                <span class="selected-names">{{ getSelectedStudentsNames() }}</span>
+              </div>
+              
+              <div class="students-list">
+                <div *ngFor="let member of courseMembers; trackBy: trackMemberById" 
+                     class="student-item"
+                     [class.selected]="isStudentSelected(member.userId)">
+                  <label class="student-checkbox">
+                    <input type="checkbox" 
+                           [checked]="isStudentSelected(member.userId)"
+                           (change)="toggleStudentSelection(member.userId)"
+                           (click)="$event.stopPropagation()">
+                    <span class="checkmark"></span>
+                    <div class="student-info">
+                      <span class="student-name">{{ member.fullName }}</span>
+                      <span class="student-role">({{ getDisplayRole(member.role) }})</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="no-students" *ngIf="courseMembers.length === 0">
+              <p>Không tìm thấy sinh viên. Hãy thử tải lại.</p>
+            </div>
           </div>
 
           <!-- For Students: Auto-select instructor -->
@@ -255,32 +270,32 @@
             <div class="rich-textarea-container">
               <div class="editor-toolbar">
                 <div class="toolbar-group">
-                  <button type="button" class="format-btn" (click)="formatText('bold')" title="In đậm">
+                  <button type="button" class="format-btn" (click)="formatText('bold'); $event.preventDefault(); $event.stopPropagation()" title="In đậm">
                     <i class="fas fa-bold"></i>
                   </button>
-                  <button type="button" class="format-btn" (click)="formatText('italic')" title="In nghiêng">
+                  <button type="button" class="format-btn" (click)="formatText('italic'); $event.preventDefault(); $event.stopPropagation()" title="In nghiêng">
                     <i class="fas fa-italic"></i>
                   </button>
-                  <button type="button" class="format-btn" (click)="formatText('underline')" title="Gạch chân">
+                  <button type="button" class="format-btn" (click)="formatText('underline'); $event.preventDefault(); $event.stopPropagation()" title="Gạch chân">
                     <i class="fas fa-underline"></i>
                   </button>
                 </div>
                 <div class="toolbar-separator"></div>
                 <div class="toolbar-group">
-                  <button type="button" class="format-btn" (click)="formatText('bulletList')" title="Danh sách">
+                  <button type="button" class="format-btn" (click)="formatText('bulletList'); $event.preventDefault(); $event.stopPropagation()" title="Danh sách">
                     <i class="fas fa-list-ul"></i>
                   </button>
-                  <button type="button" class="format-btn" (click)="formatText('numberList')" title="Danh sách số">
+                  <button type="button" class="format-btn" (click)="formatText('numberList'); $event.preventDefault(); $event.stopPropagation()" title="Danh sách số">
                     <i class="fas fa-list-ol"></i>
                   </button>
                 </div>
                 <div class="toolbar-separator"></div>
                 <div class="toolbar-group">
-                  <button type="button" class="format-btn link-btn" (click)="formatText('link')" title="Tạo liên kết">
+                  <button type="button" class="format-btn link-btn" (click)="openLinkModal('create'); $event.preventDefault(); $event.stopPropagation()" title="Tạo liên kết">
                     <i class="fas fa-link"></i>
                     <span>Link</span>
                   </button>
-                  <button type="button" class="format-btn" (click)="triggerFileUpload()" title="Upload file">
+                  <button type="button" class="format-btn" (click)="triggerFileUpload(); $event.preventDefault(); $event.stopPropagation()" title="Upload file">
                     <i class="fas fa-upload"></i>
                   </button>
                 </div>
@@ -406,7 +421,7 @@
               </span>
             </div>
             
-            <div class="discussion-content" [innerHTML]="selectedDiscussion.content">
+            <div class="discussion-content" [innerHTML]="selectedDiscussion.content | markdown">
             </div>
             
             <!-- File Attachment -->
@@ -447,32 +462,32 @@
               <div class="rich-textarea-container">
                 <div class="editor-toolbar">
                   <div class="toolbar-group">
-                    <button type="button" class="format-btn" (click)="formatText('bold', 'reply')" title="In đậm">
+                    <button type="button" class="format-btn" (click)="formatText('bold', 'reply'); $event.preventDefault(); $event.stopPropagation()" title="In đậm">
                       <i class="fas fa-bold"></i>
                     </button>
-                    <button type="button" class="format-btn" (click)="formatText('italic', 'reply')" title="In nghiêng">
+                    <button type="button" class="format-btn" (click)="formatText('italic', 'reply'); $event.preventDefault(); $event.stopPropagation()" title="In nghiêng">
                       <i class="fas fa-italic"></i>
                     </button>
-                    <button type="button" class="format-btn" (click)="formatText('underline', 'reply')" title="Gạch chân">
+                    <button type="button" class="format-btn" (click)="formatText('underline', 'reply'); $event.preventDefault(); $event.stopPropagation()" title="Gạch chân">
                       <i class="fas fa-underline"></i>
                     </button>
                   </div>
                   <div class="toolbar-separator"></div>
                   <div class="toolbar-group">
-                    <button type="button" class="format-btn" (click)="formatText('bulletList', 'reply')" title="Danh sách">
+                    <button type="button" class="format-btn" (click)="formatText('bulletList', 'reply'); $event.preventDefault(); $event.stopPropagation()" title="Danh sách">
                       <i class="fas fa-list-ul"></i>
                     </button>
-                    <button type="button" class="format-btn" (click)="formatText('numberList', 'reply')" title="Danh sách số">
+                    <button type="button" class="format-btn" (click)="formatText('numberList', 'reply'); $event.preventDefault(); $event.stopPropagation()" title="Danh sách số">
                       <i class="fas fa-list-ol"></i>
                     </button>
                   </div>
                   <div class="toolbar-separator"></div>
                   <div class="toolbar-group">
-                    <button type="button" class="format-btn link-btn" (click)="formatText('link', 'reply')" title="Tạo liên kết">
+                    <button type="button" class="format-btn link-btn" (click)="openLinkModal('reply'); $event.preventDefault(); $event.stopPropagation()" title="Tạo liên kết">
                       <i class="fas fa-link"></i>
                     </button>
                     
-                    <button type="button" class="format-btn" (click)="triggerFileUpload('reply')" title="Upload file">
+                    <button type="button" class="format-btn" (click)="triggerFileUpload('reply'); $event.preventDefault(); $event.stopPropagation()" title="Upload file">
                       <i class="fas fa-upload"></i>
                     </button>
                   </div>
@@ -594,7 +609,7 @@
                 </div>
               </div>
               
-              <div class="reply-content" [innerHTML]="reply.content">
+              <div class="reply-content" [innerHTML]="reply.content | markdown">
               </div>
 
               <!-- Reply File Attachment -->
@@ -617,31 +632,31 @@
                     <div class="rich-textarea-container nested">
                       <div class="editor-toolbar nested">
                         <div class="toolbar-group">
-                          <button type="button" class="format-btn small" (click)="formatText('bold', 'nested-' + reply.replyId)" title="In đậm">
+                          <button type="button" class="format-btn small" (click)="formatText('bold', 'nested-' + reply.replyId); $event.preventDefault(); $event.stopPropagation()" title="In đậm">
                             <i class="fas fa-bold"></i>
                           </button>
-                          <button type="button" class="format-btn small" (click)="formatText('italic', 'nested-' + reply.replyId)" title="In nghiêng">
+                          <button type="button" class="format-btn small" (click)="formatText('italic', 'nested-' + reply.replyId); $event.preventDefault(); $event.stopPropagation()" title="In nghiêng">
                             <i class="fas fa-italic"></i>
                           </button>
-                          <button type="button" class="format-btn small" (click)="formatText('underline', 'nested-' + reply.replyId)" title="Gạch chân">
+                          <button type="button" class="format-btn small" (click)="formatText('underline', 'nested-' + reply.replyId); $event.preventDefault(); $event.stopPropagation()" title="Gạch chân">
                             <i class="fas fa-underline"></i>
                           </button>
                         </div>
                         <div class="toolbar-separator"></div>
                         <div class="toolbar-group">
-                          <button type="button" class="format-btn small" (click)="formatText('bulletList', 'nested-' + reply.replyId)" title="Danh sách">
+                          <button type="button" class="format-btn small" (click)="formatText('bulletList', 'nested-' + reply.replyId); $event.preventDefault(); $event.stopPropagation()" title="Danh sách">
                             <i class="fas fa-list-ul"></i>
                           </button>
-                          <button type="button" class="format-btn small" (click)="formatText('numberedList', 'nested-' + reply.replyId)" title="Danh sách số">
+                          <button type="button" class="format-btn small" (click)="formatText('numberList', 'nested-' + reply.replyId); $event.preventDefault(); $event.stopPropagation()" title="Danh sách số">
                             <i class="fas fa-list-ol"></i>
                           </button>
                         </div>
                         <div class="toolbar-separator"></div>
                         <div class="toolbar-group">
-                          <button type="button" class="format-btn small" (click)="createLinkInNested(reply.replyId!)" title="Tạo liên kết">
+                          <button type="button" class="format-btn small" (click)="createLinkInNested(reply.replyId!); $event.preventDefault(); $event.stopPropagation()" title="Tạo liên kết">
                             <i class="fas fa-link"></i>
                           </button>
-                          <button type="button" class="format-btn small" (click)="triggerNestedFileUpload(reply.replyId!)" title="Upload file">
+                          <button type="button" class="format-btn small" (click)="triggerNestedFileUpload(reply.replyId!); $event.preventDefault(); $event.stopPropagation()" title="Upload file">
                             <i class="fas fa-upload"></i>
                           </button>
                         </div>
@@ -739,7 +754,7 @@
                     </div>
                   </div>
                   
-                  <div class="nested-reply-content" [innerHTML]="nestedReply.content">
+                  <div class="nested-reply-content" [innerHTML]="nestedReply.content | markdown">
                   </div>
 
                   <!-- Nested Reply File Attachment -->
@@ -764,5 +779,51 @@
           </div>
         </div>
       </div>
+  </div>
+
+  <!-- Link Modal -->
+  <div class="link-modal-overlay" *ngIf="showLinkModal" (click)="closeLinkModal()">
+    <div class="link-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-link"></i> Thêm liên kết</h3>
+        <button class="close-btn" (click)="closeLinkModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="linkUrl">URL <span class="required">*</span></label>
+          <input 
+            type="url" 
+            id="linkUrl"
+            [(ngModel)]="linkModalData.url" 
+            placeholder="https://example.com"
+            class="form-control"
+            autofocus>
+          <small class="help-text">Nhập địa chỉ web bạn muốn liên kết đến</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="linkDisplayText">Văn bản hiển thị</label>
+          <input 
+            type="text" 
+            id="linkDisplayText"
+            [(ngModel)]="linkModalData.displayText" 
+            placeholder="Nhập văn bản hiển thị (tùy chọn)"
+            class="form-control">
+          <small class="help-text">Nếu để trống, URL sẽ được dùng làm văn bản hiển thị</small>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeLinkModal()">
+          <i class="fas fa-times"></i> Hủy
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveLinkFromModal()">
+          <i class="fas fa-check"></i> Thêm liên kết
+        </button>
+      </div>
+    </div>
   </div>
 

@@ -1858,3 +1858,29 @@ header {
     }
   }
 }
+
+// Status and attempt count styling
+.status-completed {
+  color: #28a745;
+  font-weight: 600;
+  
+  i {
+    margin-right: 4px;
+  }
+}
+
+.status-pending {
+  color: #6c757d;
+  font-weight: 600;
+  
+  i {
+    margin-right: 4px;
+  }
+}
+
+.attempt-count {
+  margin-left: 8px;
+  font-size: 0.9em;
+  color: #6c757d;
+  font-weight: 500;
+}

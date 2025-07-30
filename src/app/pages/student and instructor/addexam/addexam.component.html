@@ -127,14 +127,16 @@
                     </span>
                   </label>
                   
+                  <!-- Tùy chọn cho phép làm nhiều lần - áp dụng cho cả hai loại đề thi -->
+                  <label>
+                    <input type="checkbox" name="allowMultipleAttempts" [(ngModel)]="examData.allowMultipleAttempts" />
+                    Cho phép làm bài nhiều lần
+                  </label>
+
                   <!-- Tùy chọn chỉ dành cho trắc nghiệm -->
                   <label *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
                     <input type="checkbox" name="shuffleAnswers" [(ngModel)]="examData.shuffleAnswers" />
                     Shuffle Answer
-                  </label>
-                  <label *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
-                    <input type="checkbox" name="allowMultipleAttempts" [(ngModel)]="examData.allowMultipleAttempts" />
-                    Allow Multiple Attempts
                   </label>
                   <label *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
                     <input type="checkbox" name="showQuizResponses" [(ngModel)]="examData.showQuizResponses" />

@@ -92,6 +92,11 @@
                     <i class="fas fa-file-alt"></i>
                     <span>{{ examData.quizType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}</span>
                   </div>
+
+                  <div class="detail-item" *ngIf="examData.allowMultipleAttempts && attemptNumber > 1">
+                    <i class="fas fa-redo"></i>
+                    <span>Lần làm thứ {{ attemptNumber }}</span>
+                  </div>
                 </div>
 
                 <div class="exam-instructions">
@@ -101,7 +106,8 @@
                     <li>Bạn có thể chuyển qua lại giữa các câu hỏi</li>
                     <li *ngIf="examData.hasTimeLimit">Có giới hạn thời gian, hãy sắp xếp thời gian hợp lý</li>
                     <li>Nhấn "Nộp bài" khi hoàn thành</li>
-                    <li>Một khi đã nộp bài, bạn không thể chỉnh sửa</li>
+                    <li *ngIf="!examData.allowMultipleAttempts">Một khi đã nộp bài, bạn không thể chỉnh sửa</li>
+                    <li *ngIf="examData.allowMultipleAttempts">Bạn có thể làm lại bài thi nhiều lần</li>
                   </ul>
                 </div>
 
@@ -479,14 +485,27 @@
                 </div>
 
                 <!-- Warning message for completed exam -->
-                <div *ngIf="hasSubmitted" class="warning-message">
+                <div *ngIf="hasSubmitted && !examData?.allowMultipleAttempts" class="warning-message">
                   <i class="fas fa-info-circle"></i>
                   <p>Bạn đã hoàn thành bài thi này. Không thể làm lại.</p>
+                </div>
+
+                <!-- Information message for multiple attempts -->
+                <div *ngIf="hasSubmitted && examData?.allowMultipleAttempts" class="info-message">
+                  <i class="fas fa-check-circle"></i>
+                  <p>Bạn đã hoàn thành lần làm thứ {{ attemptNumber }}. Bạn có thể làm lại bài thi này.</p>
                 </div>
 
                 <div class="completion-actions">
                   <button class="btn primary" (click)="navigateBackToExams()">
                     <i class="fas fa-arrow-left"></i> Quay lại danh sách bài thi
+                  </button>
+                  
+                  <button 
+                    *ngIf="examData?.allowMultipleAttempts" 
+                    class="btn secondary" 
+                    (click)="retakeExam()">
+                    <i class="fas fa-redo"></i> Làm lại bài thi
                   </button>
                 </div>
               </div>

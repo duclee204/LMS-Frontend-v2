@@ -9,11 +9,12 @@ import { NotificationService } from '../../../services/notification.service';
 import { NotificationComponent } from '../../../components/notification/notification.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
+import { MarkdownPipe } from '../../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-discussion',
   standalone: true,
-  imports: [CommonModule, FormsModule, NotificationComponent, SidebarWrapperComponent, ProfileComponent],
+  imports: [CommonModule, FormsModule, NotificationComponent, SidebarWrapperComponent, ProfileComponent, MarkdownPipe],
   templateUrl: './discussion.component.html',
   styleUrls: ['./discussion.component.scss']
 })
@@ -32,6 +33,7 @@ export class DiscussionComponent implements OnInit {
   selectedDiscussion: Discussion | null = null;
   discussionReplies: DiscussionReply[] = []; // Now using DiscussionReply interface
   courseMembers: any[] = [];
+  selectedStudentIds: number[] = []; // For multiple student selection
   courseInstructor: any = null;
   
   // Form data
@@ -82,6 +84,17 @@ export class DiscussionComponent implements OnInit {
   uploadProgress: number = 0;
   isUploading: boolean = false;
 
+  // Link modal states
+  showLinkModal: boolean = false;
+  linkModalData = {
+    url: '',
+    displayText: '',
+    target: '', // 'create' or 'reply' or nested reply id
+    textarea: null as HTMLTextAreaElement | null,
+    selectionStart: 0,
+    selectionEnd: 0
+  };
+
   // Scroll tracking for read status
   @ViewChild('discussionDetail', { static: false }) discussionDetailRef!: ElementRef;
   private scrollTimeout: any;
@@ -98,10 +111,7 @@ export class DiscussionComponent implements OnInit {
 
   ngOnInit(): void {
     // Initialize user info
-    this.username = this.sessionService.getFullName() || 'User';
-    this.userRole = this.sessionService.getUserRole() || 'student';
-    this.isInstructor = this.userRole === 'instructor';
-    this.avatarUrl = '';
+    this.refreshUserInfo();
 
     // Get courseId from query params
     this.route.queryParams.subscribe(params => {
@@ -115,6 +125,16 @@ export class DiscussionComponent implements OnInit {
 
     // Initialize with some sample history for testing
     this.initializeHistory();
+  }
+
+  // Refresh user info from session
+  refreshUserInfo(): void {
+    this.username = this.sessionService.getFullName() || 'User';
+    this.userRole = this.sessionService.getUserRole() || 'student';
+    
+    // Fix: Use SessionService methods that handle ROLE_ prefix properly
+    this.isInstructor = this.sessionService.isInstructor();
+    this.avatarUrl = '';
   }
 
   // Initialize history
@@ -270,9 +290,14 @@ export class DiscussionComponent implements OnInit {
               userId: member.userId,
               fullName: member.fullName || member.username || `User ${member.userId}`,
               role: member.role || 'student'
-            }));
+            }))
+            // Remove duplicates based on userId to prevent checkbox issues
+            .filter((member: any, index: number, array: any[]) => 
+              array.findIndex(m => m.userId === member.userId) === index
+            );
           
           console.log('👥 Filtered course members:', this.courseMembers);
+          console.log('🔍 UserIds:', this.courseMembers.map(m => m.userId));
           
           if (this.courseMembers.length > 0) {
             this.showAlert('Đã tải danh sách thành viên khóa học', 'success');
@@ -405,7 +430,17 @@ export class DiscussionComponent implements OnInit {
   }
 
   private submitDiscussion(): void {
-    this.discussionService.createDiscussion(this.newDiscussion).subscribe({
+    // Prepare discussion data
+    const discussionData = { ...this.newDiscussion };
+    
+    // For instructors sending private messages to multiple students
+    if (this.newDiscussion.type === 'PRIVATE' && this.isInstructor && this.selectedStudentIds.length > 0) {
+      discussionData.targetUserIds = this.selectedStudentIds;
+      // Remove single targetUserId for clarity
+      delete discussionData.targetUserId;
+    }
+
+    this.discussionService.createDiscussion(discussionData).subscribe({
       next: (response) => {
         if (response.success) {
           this.showAlert('Tạo thảo luận thành công!', 'success');
@@ -486,9 +521,20 @@ export class DiscussionComponent implements OnInit {
       return false;
     }
     
-    if (this.newDiscussion.type === 'PRIVATE' && !this.newDiscussion.targetUserId) {
-      this.showAlert('Vui lòng chọn người nhận cho thảo luận riêng tư', 'warning');
-      return false;
+    if (this.newDiscussion.type === 'PRIVATE') {
+      if (this.isInstructor) {
+        // For instructors, check if at least one student is selected
+        if (this.selectedStudentIds.length === 0) {
+          this.showAlert('Vui lòng chọn ít nhất một sinh viên cho thảo luận riêng tư', 'warning');
+          return false;
+        }
+      } else {
+        // For students, check if targetUserId is set
+        if (!this.newDiscussion.targetUserId) {
+          this.showAlert('Vui lòng chọn người nhận cho thảo luận riêng tư', 'warning');
+          return false;
+        }
+      }
     }
     
     return true;
@@ -499,10 +545,42 @@ export class DiscussionComponent implements OnInit {
     this.newDiscussion.type = type as 'PUBLIC' | 'PRIVATE';
     if (this.newDiscussion.type === 'PUBLIC') {
       this.newDiscussion.targetUserId = undefined;
+      this.selectedStudentIds = [];
     } else if (this.newDiscussion.type === 'PRIVATE' && !this.isInstructor && this.courseInstructor) {
       // Tự động set targetUserId là instructor khi student chọn private
       this.newDiscussion.targetUserId = this.courseInstructor.id;
+      this.selectedStudentIds = [];
     }
+  }
+
+  // Toggle student selection for instructors
+  toggleStudentSelection(studentId: number): void {
+    console.log('🔄 Toggling selection for student:', studentId);
+    console.log('📝 Current selected IDs before:', [...this.selectedStudentIds]);
+    
+    const index = this.selectedStudentIds.indexOf(studentId);
+    if (index > -1) {
+      this.selectedStudentIds.splice(index, 1);
+      console.log('❌ Removed student', studentId, 'from selection');
+    } else {
+      this.selectedStudentIds.push(studentId);
+      console.log('✅ Added student', studentId, 'to selection');
+    }
+    
+    console.log('📝 Current selected IDs after:', [...this.selectedStudentIds]);
+  }
+
+  // Check if student is selected
+  isStudentSelected(studentId: number): boolean {
+    return this.selectedStudentIds.includes(studentId);
+  }
+
+  // Get selected students names for display
+  getSelectedStudentsNames(): string {
+    const selectedStudents = this.courseMembers.filter(member => 
+      this.selectedStudentIds.includes(member.userId)
+    );
+    return selectedStudents.map(student => student.fullName).join(', ');
   }
 
   // Reset form
@@ -513,6 +591,7 @@ export class DiscussionComponent implements OnInit {
       content: '',
       type: 'PUBLIC' // Always default to PUBLIC
     };
+    this.selectedStudentIds = [];
     this.removeSelectedFile(); // Clear selected file
   }
 
@@ -610,28 +689,43 @@ export class DiscussionComponent implements OnInit {
   }
 
   getDisplayRole(role: string): string {
-    return role === 'instructor' ? 'Giảng viên' : 'Sinh viên';
+    // Handle roles with ROLE_ prefix
+    const normalizedRole = role ? role.replace('ROLE_', '').toLowerCase() : '';
+    return normalizedRole === 'instructor' ? 'Giảng viên' : 'Sinh viên';
   }
 
   // Format text methods for rich textarea
   formatText(command: string, target?: string) {
-    console.log('Format command:', command);
+    console.log('🎯 Format command received:', command, 'target:', target);
     
     // Get the active textarea
-    let textarea: HTMLTextAreaElement;
+    let textarea: HTMLTextAreaElement | null = null;
     if (target === 'reply') {
       textarea = document.querySelector('textarea[name="replyContent"]') as HTMLTextAreaElement;
+      console.log('🔍 Looking for reply textarea:', textarea);
+    } else if (target && target.startsWith('nested-')) {
+      // For nested replies, target format is 'nested-{replyId}'
+      const replyId = target.replace('nested-', '');
+      textarea = document.querySelector(`textarea[name="nestedReply${replyId}"]`) as HTMLTextAreaElement;
+      console.log('🔍 Looking for nested textarea:', textarea, 'with selector:', `textarea[name="nestedReply${replyId}"]`);
     } else {
       textarea = document.querySelector('textarea[name="discussionContent"]') as HTMLTextAreaElement;
+      console.log('🔍 Looking for discussion textarea:', textarea);
     }
     
-    if (!textarea) return;
+    if (!textarea) {
+      console.error('❌ Textarea not found for target:', target);
+      this.showAlert('Không tìm thấy ô nhập liệu', 'error');
+      return;
+    }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = textarea.value.substring(start, end);
     const beforeText = textarea.value.substring(0, start);
     const afterText = textarea.value.substring(end);
+
+    console.log('📝 Text processing:', { start, end, selectedText, currentLength: textarea.value.length });
 
     let newText = '';
     let newCursorPos = start;
@@ -688,53 +782,194 @@ export class DiscussionComponent implements OnInit {
         break;
       
       case 'link':
-        this.insertLink(textarea, start, end, selectedText);
+        // Use modal instead of inline prompt
+        console.log('🔗 Opening link modal for target:', target);
+        this.openLinkModal(target || 'create', textarea);
         return;
       
       default:
+        console.warn('⚠️ Unknown format command:', command);
         return;
     }
 
     // Update textarea value
     const fullText = beforeText + newText + afterText;
+    console.log('📝 Updating content from', textarea.value.length, 'to', fullText.length, 'chars');
+    
     if (target === 'reply') {
       this.replyContent = fullText;
     } else {
       this.newDiscussion.content = fullText;
     }
 
+    // Force update the textarea value
+    textarea.value = fullText;
+
     // Set cursor position after update
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(newCursorPos, newCursorPos);
+      console.log('✅ Cursor positioned at:', newCursorPos);
     }, 10);
   }
 
   // Insert link functionality
   insertLink(textarea: HTMLTextAreaElement, start: number, end: number, selectedText: string) {
-    const linkText = selectedText || 'văn bản hiển thị';
-    const linkUrl = prompt('Nhập URL:', 'https://');
+    // Store textarea and selection info for later use
+    this.linkModalData = {
+      url: '',
+      displayText: selectedText || '',
+      target: textarea.name === 'replyContent' ? 'reply' : 'create',
+      textarea: textarea,
+      selectionStart: start,
+      selectionEnd: end
+    };
     
-    if (linkUrl && linkUrl.trim() !== 'https://') {
-      const linkMarkdown = `[${linkText}](${linkUrl.trim()})`;
-      const beforeText = textarea.value.substring(0, start);
-      const afterText = textarea.value.substring(end);
-      const fullText = beforeText + linkMarkdown + afterText;
-      
-      // Update the appropriate model
-      if (textarea.name === 'replyContent') {
-        this.replyContent = fullText;
-      } else {
-        this.newDiscussion.content = fullText;
+    // Show the link modal
+    this.showLinkModal = true;
+  }
+
+  // Open link modal for different targets
+  openLinkModal(target: string, textarea?: HTMLTextAreaElement) {
+    console.log('🔗 Opening link modal for target:', target);
+    
+    let targetTextarea: HTMLTextAreaElement | null = null;
+    let selectedText = '';
+    let start = 0;
+    let end = 0;
+
+    if (textarea) {
+      targetTextarea = textarea;
+      start = textarea.selectionStart;
+      end = textarea.selectionEnd;
+      selectedText = textarea.value.substring(start, end);
+      console.log('✅ Using provided textarea');
+    } else {
+      // Special handling for reply form - ensure it's shown first
+      if (target === 'reply' && !this.showMainReplyForm) {
+        console.log('🔄 Reply form not shown, opening it first...');
+        this.showMainReplyForm = true;
+        // Wait for the form to render before trying to find the textarea
+        setTimeout(() => {
+          this.openLinkModal(target);
+        }, 200);
+        return;
       }
-      
-      // Set cursor position after the link
-      setTimeout(() => {
-        textarea.focus();
-        const newPos = start + linkMarkdown.length;
-        textarea.setSelectionRange(newPos, newPos);
-      }, 10);
+
+      // Find textarea based on target
+      if (target === 'reply') {
+        targetTextarea = document.querySelector('textarea[name="replyContent"]') as HTMLTextAreaElement;
+      } else if (target === 'create') {
+        targetTextarea = document.querySelector('textarea[name="discussionContent"]') as HTMLTextAreaElement;
+      } else {
+        // For nested replies, target should be the reply ID
+        targetTextarea = document.querySelector(`textarea[name="nestedReply${target}"]`) as HTMLTextAreaElement;
+      }
+
+      if (targetTextarea) {
+        start = targetTextarea.selectionStart;
+        end = targetTextarea.selectionEnd;
+        selectedText = targetTextarea.value.substring(start, end);
+        console.log('✅ Found textarea for target:', target);
+      } else {
+        console.error('❌ Could not find textarea for target:', target);
+        console.log('🔍 Available textareas:', Array.from(document.querySelectorAll('textarea')).map(ta => (ta as HTMLTextAreaElement).name));
+        this.showAlert('Không tìm thấy ô nhập liệu. Vui lòng thử lại sau khi mở form.', 'error');
+        return;
+      }
     }
+
+    if (!targetTextarea) {
+      this.showAlert('Không tìm thấy ô nhập liệu', 'error');
+      return;
+    }
+
+    // Store modal data
+    this.linkModalData = {
+      url: '',
+      displayText: selectedText || '',
+      target: target,
+      textarea: targetTextarea,
+      selectionStart: start,
+      selectionEnd: end
+    };
+    
+    // Show the modal
+    this.showLinkModal = true;
+    console.log('✅ Link modal opened');
+  }
+
+  // Close link modal
+  closeLinkModal() {
+    this.showLinkModal = false;
+    this.linkModalData = {
+      url: '',
+      displayText: '',
+      target: '',
+      textarea: null,
+      selectionStart: 0,
+      selectionEnd: 0
+    };
+  }
+
+  // Save link from modal
+  saveLinkFromModal() {
+    const { url, displayText, target, textarea, selectionStart, selectionEnd } = this.linkModalData;
+    
+    // Validate URL
+    if (!url.trim()) {
+      this.showAlert('Vui lòng nhập URL', 'warning');
+      return;
+    }
+
+    let finalUrl = url.trim();
+    
+    // Add https:// if no protocol specified
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+
+    // Validate URL format
+    try {
+      new URL(finalUrl);
+    } catch (error) {
+      this.showAlert('URL không hợp lệ. Vui lòng nhập URL đúng định dạng.', 'error');
+      return;
+    }
+
+    // Use display text if provided, otherwise use URL
+    const linkText = displayText.trim() || finalUrl;
+    const linkMarkdown = `[${linkText}](${finalUrl})`;
+    
+    if (!textarea) {
+      this.showAlert('Lỗi: Không tìm thấy ô nhập liệu', 'error');
+      return;
+    }
+
+    // Insert the markdown link
+    const beforeText = textarea.value.substring(0, selectionStart);
+    const afterText = textarea.value.substring(selectionEnd);
+    const newContent = beforeText + linkMarkdown + afterText;
+    
+    // Update the appropriate model based on target
+    if (target === 'reply') {
+      this.replyContent = newContent;
+    } else if (target === 'create') {
+      this.newDiscussion.content = newContent;
+    } else {
+      // For nested replies
+      this.nestedReplyContent[parseInt(target)] = newContent;
+    }
+    
+    // Set cursor position after the inserted link
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = selectionStart + linkMarkdown.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 100);
+    
+    this.showAlert('Đã thêm liên kết!', 'success');
+    this.closeLinkModal();
   }
 
   // Save current text to history
@@ -815,14 +1050,14 @@ export class DiscussionComponent implements OnInit {
   // Check if can navigate back in history
   canNavigateBack(): boolean {
     const canNav = this.currentHistoryIndex > 0;
-    console.log('🔍 Can navigate back:', canNav, 'Current index:', this.currentHistoryIndex, 'History length:', this.textHistory.length);
+    // Reduce logging frequency to avoid console spam
     return canNav;
   }
 
   // Check if can navigate forward in history
   canNavigateForward(): boolean {
     const canNav = this.currentHistoryIndex < this.textHistory.length - 1;
-    console.log('🔍 Can navigate forward:', canNav, 'Current index:', this.currentHistoryIndex, 'History length:', this.textHistory.length);
+    // Reduce logging frequency to avoid console spam  
     return canNav;
   }
 
@@ -1031,7 +1266,19 @@ export class DiscussionComponent implements OnInit {
 
   // Show main reply form
   showReplyForm() {
+    console.log('📝 Showing reply form');
     this.showMainReplyForm = true;
+    
+    // Wait a bit for the form to render, then focus on textarea
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea[name="replyContent"]') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+        console.log('✅ Reply form shown and textarea focused');
+      } else {
+        console.error('❌ Reply textarea not found after showing form');
+      }
+    }, 100);
   }
 
   // Hide main reply form
@@ -1122,6 +1369,11 @@ export class DiscussionComponent implements OnInit {
   // TrackBy function for performance optimization
   trackDiscussionById(index: number, discussion: Discussion): number {
     return discussion.discussionId || index;
+  }
+
+  // TrackBy function for course members
+  trackMemberById(index: number, member: any): number {
+    return member.userId || index;
   }
 
   // Profile event handlers
@@ -1279,7 +1531,6 @@ export class DiscussionComponent implements OnInit {
 
   // Create link in nested reply
   createLinkInNested(replyId: number) {
-    const textareaId = 'nested-' + replyId;
     const textarea = document.querySelector(`textarea[name="nestedReply${replyId}"]`) as HTMLTextAreaElement;
     
     if (!textarea) {
@@ -1287,38 +1538,8 @@ export class DiscussionComponent implements OnInit {
       return;
     }
 
-    const url = prompt('Nhập URL (ví dụ: https://example.com):');
-    
-    if (url) {
-      // Validate URL format
-      try {
-        new URL(url);
-        
-        const linkText = prompt('Nhập text hiển thị (để trống sẽ dùng URL):') || url;
-        const markdownLink = `[${linkText}](${url})`;
-        
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const currentContent = this.nestedReplyContent[replyId] || '';
-        
-        // Insert the markdown link
-        const newContent = currentContent.substring(0, start) + markdownLink + currentContent.substring(end);
-        this.nestedReplyContent[replyId] = newContent;
-        
-        // Update history
-        this.saveToNestedHistory(newContent, replyId);
-        
-        // Set cursor position after the inserted link
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start + markdownLink.length, start + markdownLink.length);
-        }, 0);
-        
-        this.showAlert('Đã thêm liên kết!', 'success');
-      } catch (error) {
-        this.showAlert('URL không hợp lệ. Vui lòng nhập URL đúng định dạng.', 'error');
-      }
-    }
+    // Use the new modal system
+    this.openLinkModal(replyId.toString(), textarea);
   }
 
   // Trigger nested file upload
@@ -1473,7 +1694,7 @@ export class DiscussionComponent implements OnInit {
   canNavigateBackNested(replyId: number): boolean {
     const currentIndex = this.nestedCurrentHistoryIndex[replyId];
     const canNav = currentIndex !== undefined && currentIndex > 0;
-    console.log('🔍 Can navigate back nested for reply', replyId, ':', canNav, 'Current index:', currentIndex);
+    // Reduce logging to avoid console spam
     return canNav;
   }
 
@@ -1482,7 +1703,7 @@ export class DiscussionComponent implements OnInit {
     const history = this.nestedTextHistory[replyId];
     const currentIndex = this.nestedCurrentHistoryIndex[replyId];
     const canNav = history && currentIndex !== undefined && currentIndex < history.length - 1;
-    console.log('🔍 Can navigate forward nested for reply', replyId, ':', canNav, 'Current index:', currentIndex, 'History length:', history?.length);
+    // Reduce logging to avoid console spam
     return canNav;
   }
 

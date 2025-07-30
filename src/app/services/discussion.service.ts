@@ -39,7 +39,8 @@ export interface CreateDiscussionDto {
   title?: string; // Optional for replies
   content: string;
   type: 'PUBLIC' | 'PRIVATE';
-  targetUserId?: number;
+  targetUserId?: number; // For single target (backward compatibility)
+  targetUserIds?: number[]; // For multiple targets
   parentId?: number; // For replies
   attachmentUrl?: string; // File attachment URL
   attachmentName?: string; // Original file name

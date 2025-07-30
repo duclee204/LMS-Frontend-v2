@@ -1611,23 +1611,13 @@ export class ModuleComponent {
   }
 
   canAccessQuiz(module: ModuleItem, quiz: any): boolean {
-    // If no progress data, allow access for instructors/admins
-    if (!module.progress) {
-      return this.canManageContent();
-    }
-    
-    // For students, check if test is unlocked
-    return module.progress.testUnlocked || this.canManageContent();
+    // Removed learning sequence restriction - students can access tests freely
+    return true;
   }
 
   viewQuiz(module: ModuleItem, quiz: any): void {
-    if (!this.canAccessQuiz(module, quiz)) {
-      alert('Bạn cần hoàn thành nội dung và video trước khi có thể làm bài kiểm tra này.');
-      return;
-    }
-    
     console.log('📝 Viewing quiz:', quiz.title);
-    // Navigate to quiz page
+    // Navigate to quiz page - no restrictions
     this.router.navigate(['/exam'], {
       queryParams: { 
         courseId: this.courseId,

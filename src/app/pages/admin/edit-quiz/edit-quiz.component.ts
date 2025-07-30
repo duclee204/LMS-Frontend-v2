@@ -9,6 +9,7 @@ interface QuizEditData {
   title: string;
   description: string;
   timeLimit: number;
+  allowMultipleAttempts: boolean;
   questions: QuestionData[];
 }
 
@@ -64,6 +65,7 @@ export class EditQuizComponent implements OnInit {
       title: ['', Validators.required],
       description: [''],
       timeLimit: [60, [Validators.required, Validators.min(1)]],
+      allowMultipleAttempts: [false],
       questions: this.fb.array([])
     });
   }
@@ -91,7 +93,8 @@ export class EditQuizComponent implements OnInit {
     this.editForm.patchValue({
       title: data.title,
       description: data.description,
-      timeLimit: data.timeLimit
+      timeLimit: data.timeLimit,
+      allowMultipleAttempts: data.allowMultipleAttempts || false
     });
 
     // Clear existing questions

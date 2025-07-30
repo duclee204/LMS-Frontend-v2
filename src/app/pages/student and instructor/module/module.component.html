@@ -201,7 +201,7 @@
                 <!-- Module Quizzes -->
                 <div class="quiz-list" *ngIf="item.quizzes && item.quizzes.length > 0">
                   <h4 class="section-title">📝 Tests</h4>
-                  <div *ngFor="let quiz of item.quizzes; trackBy: trackQuizById" class="quiz-item" [ngClass]="{'clickable': canAccessQuiz(item, quiz), 'disabled': !canAccessQuiz(item, quiz)}" (click)="viewQuiz(item, quiz)">
+                  <div *ngFor="let quiz of item.quizzes; trackBy: trackQuizById" class="quiz-item clickable" (click)="viewQuiz(item, quiz)">
                     <div class="quiz-info">
                       <span class="quiz-icon">📋</span>
                       <div class="quiz-details">
@@ -217,8 +217,7 @@
                     </div>
                     <div class="quiz-status">
                       <i class="fas fa-check-circle" *ngIf="item.progress && item.progress.testCompleted" style="color: #2ecc71;" title="Completed"></i>
-                      <i class="fas fa-lock" *ngIf="!canAccessQuiz(item, quiz)" style="color: #e74c3c;" title="Locked"></i>
-                      <i class="fas fa-play-circle" *ngIf="canAccessQuiz(item, quiz) && (!item.progress || !item.progress.testCompleted)" style="color: #3498db;" title="Available"></i>
+                      <i class="fas fa-play-circle" *ngIf="!item.progress || !item.progress.testCompleted" style="color: #3498db;" title="Available"></i>
                     </div>
                   </div>
                 </div>
