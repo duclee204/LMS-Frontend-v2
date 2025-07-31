@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { SidebarComponent } from '../../../components/sidebar/sidebar.component';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { UserService } from '../../../services/user.service';
+import { ModuleContentService } from '../../../services/module-content.service';
 
 @Component({
   selector: 'app-learn-online',
@@ -45,10 +46,16 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     private sessionService: SessionService,
     private userService: UserService,
     private notificationService: NotificationService,
+    private moduleContentService: ModuleContentService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
+    console.log('🎥 Learn-online component initialized');
+    console.log('👤 User role:', this.sessionService.getUserRole());
+    console.log('🎓 Is Student:', this.sessionService.isStudent());
+    console.log('👨‍🏫 Is Instructor:', this.sessionService.isInstructor());
+    
     // Chỉ load data khi đang chạy ở browser (có localStorage)
     if (!isPlatformBrowser(this.platformId)) {
       console.log('SSR mode - skipping data loading');
@@ -160,10 +167,31 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     if (!this.courseId) return;
     
     this.loading = true;
-    this.apiService.getVideosByCourse(this.courseId).subscribe({
+    
+    // For students, only load published videos
+    const publishedOnly = this.sessionService.isStudent();
+    
+    this.apiService.getVideosByCourse(this.courseId, publishedOnly).subscribe({
       next: data => {
-        this.videos = data;
+        console.log(`🔍 Raw videos received for course ${this.courseId}:`, JSON.stringify(data, null, 2));
+        
+        // Always apply client-side filtering for students as additional safety measure
+        if (publishedOnly) {
+          console.log('🔒 Applying additional client-side filtering for students');
+          this.videos = data.filter(video => {
+            const isPublished = video.published === true || video.publish === true || video.status === 'published';
+            console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
+            return isPublished;
+          });
+          console.log('🔒 Final filtered videos for student:', this.videos);
+        } else {
+          console.log('👨‍🏫 Loading all videos for instructor/admin');
+          this.videos = data;
+        }
+        
         this.loading = false;
+        
+        console.log(`✅ Videos loaded for course ${this.courseId}:`, this.videos);
         
         if (this.videos.length > 0) {
           // Phát video đầu tiên của khóa học
@@ -178,12 +206,53 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
       error: err => {
         console.error('Lỗi khi tải danh sách video:', err);
         this.loading = false;
-        if (err.status === 401) {
-          this.showAlert('Bạn cần đăng nhập để xem video', 'warning');
-        } else if (err.status === 403) {
-          this.showAlert('Bạn không có quyền truy cập khóa học này', 'error');
+        
+        // If publishedOnly request fails, try fallback for students
+        if (publishedOnly && this.courseId) {
+          console.log('🔄 Fallback: Loading all videos and filtering client-side for student');
+          console.log('🔄 Error details:', err.status, err.message);
+          this.apiService.getVideosByCourse(this.courseId, false).subscribe({
+            next: allVideos => {
+              console.log('🔍 All videos received for filtering:', JSON.stringify(allVideos, null, 2));
+              
+              // Filter published videos client-side - check multiple possible fields
+              this.videos = allVideos.filter(video => {
+                const isPublished = video.published === true || video.publish === true || video.status === 'published';
+                console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
+                return isPublished;
+              });
+              console.log('✅ Fallback: Filtered published videos client-side:', this.videos);
+              this.loading = false;
+              
+              if (this.videos.length > 0) {
+                this.playVideo(this.videos[0]);
+                this.hasNoVideos = false;
+              } else {
+                this.showNoVideosMessage();
+                this.hasNoVideos = true;
+              }
+            },
+            error: fallbackErr => {
+              console.error('❌ Fallback also failed:', fallbackErr);
+              this.loading = false;
+              if (fallbackErr.status === 401) {
+                this.showAlert('Bạn cần đăng nhập để xem video', 'warning');
+              } else if (fallbackErr.status === 403) {
+                this.showAlert('Bạn không có quyền truy cập khóa học này', 'error');
+              } else {
+                this.showAlert('Không thể tải danh sách video. Vui lòng thử lại!', 'error');
+              }
+            }
+          });
         } else {
-          this.showAlert('Không thể tải danh sách video. Vui lòng thử lại!', 'error');
+          // Handle other errors normally
+          if (err.status === 401) {
+            this.showAlert('Bạn cần đăng nhập để xem video', 'warning');
+          } else if (err.status === 403) {
+            this.showAlert('Bạn không có quyền truy cập khóa học này', 'error');
+          } else {
+            this.showAlert('Không thể tải danh sách video. Vui lòng thử lại!', 'error');
+          }
         }
       }
     });
@@ -232,6 +301,11 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
         
         // Thêm giới hạn tua video không quá 2 phút
         this.addVideoSeekLimitation();
+        
+        // Add video progress tracking for students
+        if (this.sessionService.isStudent()) {
+          this.addVideoProgressTracking(video);
+        }
         
         // Reset tổng thời gian tua cho video mới
         this.totalSeekTime = 0;
@@ -314,6 +388,68 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     // Kết thúc tua
     video.addEventListener('seeked', () => {
       isUserSeeking = false;
+    });
+  }
+
+  private addVideoProgressTracking(video: any) {
+    if (!isPlatformBrowser(this.platformId)) return;
+    
+    if (!this.videoPlayer?.nativeElement) {
+      console.error('Video player element not available for progress tracking');
+      return;
+    }
+    
+    const videoElement = this.videoPlayer.nativeElement;
+    let lastUpdateTime = 0;
+    const updateInterval = 10; // Update progress every 10 seconds
+    
+    console.log('🎥 Setting up progress tracking for video:', video.title);
+    
+    videoElement.addEventListener('timeupdate', () => {
+      const currentTime = videoElement.currentTime;
+      const duration = videoElement.duration;
+      
+      // Only update progress every 10 seconds to avoid too many API calls
+      if (currentTime - lastUpdateTime >= updateInterval || currentTime === 0) {
+        lastUpdateTime = currentTime;
+        
+        if (duration && currentTime > 0) {
+          console.log(`🎥 Video progress: ${currentTime.toFixed(1)}/${duration.toFixed(1)} seconds`);
+          this.updateVideoProgress(video, currentTime, duration);
+        }
+      }
+    });
+    
+    // Track when video ends
+    videoElement.addEventListener('ended', () => {
+      console.log('🎉 Video completed!');
+      const duration = videoElement.duration;
+      if (duration) {
+        this.updateVideoProgress(video, duration, duration);
+      }
+    });
+  }
+
+  private updateVideoProgress(video: any, currentTime: number, duration: number) {
+    if (!video.videoId) return;
+    
+    this.moduleContentService.updateVideoWatchProgress(video.videoId, currentTime, duration).subscribe({
+      next: (response: any) => {
+        const watchedPercentage = (currentTime / duration) * 100;
+        console.log(`✅ Video progress updated: ${watchedPercentage.toFixed(1)}%`);
+        
+        // Update local video object
+        video.watchedPercentage = watchedPercentage;
+        video.isCompleted = watchedPercentage >= 90;
+        
+        if (video.isCompleted && watchedPercentage >= 99) {
+          console.log('🎉 Video fully completed!');
+          this.showAlert('Bạn đã hoàn thành video này!', 'success');
+        }
+      },
+      error: (err: any) => {
+        console.error('❌ Error updating video progress:', err);
+      }
     });
   }
 

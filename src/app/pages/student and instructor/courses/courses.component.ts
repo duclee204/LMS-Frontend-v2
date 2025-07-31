@@ -194,10 +194,10 @@ export class CoursesComponent implements OnInit {
   // Vào trang học/quản lý khóa học
   enterCourse(course: any) {
     if (this.sessionService.isInstructor()) {
-      this.router.navigate(['/module'], { queryParams: { courseId: course.courseId } });
+      this.router.navigate(['/course-home'], { queryParams: { courseId: course.courseId } });
     } else if (this.sessionService.isStudent()) {
       if (course.enrolled) {
-        this.router.navigate(['/module'], { 
+        this.router.navigate(['/course-home'], { 
           queryParams: { 
             courseId: course.courseId,
             courseName: course.title 
@@ -215,7 +215,7 @@ export class CoursesComponent implements OnInit {
                 if (response && response.success) {
                   this.showAlert(response.message || 'Đăng ký thành công!', 'success');
                   course.enrolled = true;
-                  this.router.navigate(['/module'], { 
+                  this.router.navigate(['/course-home'], { 
                     queryParams: { 
                       courseId: course.courseId,
                       courseName: course.title 
@@ -259,7 +259,7 @@ export class CoursesComponent implements OnInit {
       }
     } else {
       // Admin hoặc role khác
-      this.router.navigate(['/module'], { 
+      this.router.navigate(['/course-home'], { 
         queryParams: { 
           courseId: course.courseId,
           courseName: course.title 
@@ -268,21 +268,21 @@ export class CoursesComponent implements OnInit {
     }
   }
 
-  // Xem chi tiết khóa học -> chuyển sang trang module
+  // Xem chi tiết khóa học -> chuyển sang trang course-home
   viewCourseDetails(course: any) {
     console.log('View course details:', course);
     
     if (this.sessionService.isInstructor()) {
-      // Giảng viên: Chuyển sang trang module
-      this.router.navigate(['/module'], { 
+      // Giảng viên: Chuyển sang trang course-home
+      this.router.navigate(['/course-home'], { 
         queryParams: { 
           courseId: course.courseId,
           courseName: course.title 
         } 
       });
     } else if (this.sessionService.isStudent()) {
-      // Sinh viên: Chuyển sang trang module
-      this.router.navigate(['/module'], { 
+      // Sinh viên: Chuyển sang trang course-home
+      this.router.navigate(['/course-home'], { 
         queryParams: { 
           courseId: course.courseId,
           courseName: course.title 
@@ -290,7 +290,7 @@ export class CoursesComponent implements OnInit {
       });
     } else {
       // Admin hoặc role khác
-      this.router.navigate(['/module'], { 
+      this.router.navigate(['/course-home'], { 
         queryParams: { 
           courseId: course.courseId,
           courseName: course.title 

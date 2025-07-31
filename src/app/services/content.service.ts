@@ -15,6 +15,9 @@ export interface ContentItem {
   showDropdown?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  // Progress tracking properties
+  isCompleted?: boolean;
+  viewedAt?: string;
 }
 
 // Backend response DTO interface

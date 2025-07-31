@@ -1,112 +1,171 @@
-/* Layout cho exam component với sidebar cố định và main content có cuộn */
+// Layout structure
 .layout-row {
   display: flex;
   min-height: 100vh;
-  background: #f5f7fa;
-  width: 100%;
 }
 
 .sidebar {
-  width: 260px;
   flex-shrink: 0;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  overflow-y: auto;
 }
 
 .main-content {
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background: #e3e8ff;
+  background-color: #f9f9f9;
 }
 
 .profile-header {
   flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background: white;
-  position: sticky;
-  top: 0;
-  z-index: 50;
 }
 
-/* Breadcrumb */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+// Breadcrumb styling
 .breadcrumb {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #018ED5;
-  font-size: 1.125rem;
-  font-weight: 400;
-  margin-bottom: 0.5rem;
-  user-select: none;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  
-  > * {
-    display: inline-block;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  gap: 10px;
+
+  button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #e9ecef;
+    }
+  }
+
+  .breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+
+    .breadcrumb-item {
+      color: #6c757d;
+
+      &.course-name {
+        font-weight: 500;
+        color: #007bff;
+      }
+
+      &.current-page {
+        font-weight: 600;
+        color: #495057;
+      }
+    }
+
+    .breadcrumb-separator {
+      color: #adb5bd;
+    }
   }
 }
 
-.breadcrumb button {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: #8bb3d8;
-  font-size: 20px;
+// Content wrapper
+.content-wrapper {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  transition: margin-left 0.3s ease;
 
-.breadcrumb button:hover {
-  color: #5a8fcf;
-}
-
-.breadcrumb i {
-  cursor: pointer;
-}
-
-.breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: 5px;
-  font-size: 18px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-.breadcrumb-item {
-  white-space: nowrap;
-  display: inline-block;
-  
-  &.course-name {
-    color: #3371ce;
-    font-weight: 500;
-  }
-  
-  &.current-page {
-    color: #666;
-    font-weight: 400;
+  &.menu-hidden {
+    .left-menu {
+      transform: translateX(-100%);
+    }
   }
 }
 
-.breadcrumb-separator {
-  color: #999;
-  font-weight: 400;
-  white-space: nowrap;
+// Left menu styling
+.left-menu {
+  width: 200px;
+  background-color: #ffffff;
+  border-right: 1px solid #e9ecef;
+  padding: 20px 0;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+
+  &.hide {
+    transform: translateX(-100%);
+  }
+
+  &.show {
+    transform: translateX(0);
+  }
+
+  .link {
+    margin-bottom: 8px;
+
+    a {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      text-decoration: none;
+      color: #495057;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+
+      &:hover {
+        background-color: #f8f9fa;
+        color: #007bff;
+      }
+
+      &.active-link {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        border-left-color: #1976d2;
+        font-weight: 500;
+      }
+
+      .active-indicator {
+        color: #1976d2;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+
+      .menu-text {
+        font-size: 14px;
+      }
+    }
+
+    &.active a {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border-left-color: #1976d2;
+      font-weight: 500;
+    }
+  }
+}
+
+// Right content area
+.right-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #ffffff;
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.course-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// Exam specific styles
+.exam-container {
   display: inline-block;
   padding: 0 4px;
 }

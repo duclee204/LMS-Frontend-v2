@@ -1,9 +1,10 @@
 import { Component, OnInit, Inject, PLATFORM_ID, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DiscussionService, Discussion, CreateDiscussionDto } from '../../../services/discussion.service';
 import { DiscussionReplyService, DiscussionReply } from '../../../services/discussion-reply.service';
+import { CourseService } from '../../../services/course.service';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
 import { NotificationComponent } from '../../../components/notification/notification.component';
@@ -23,10 +24,15 @@ export class DiscussionComponent implements OnInit {
   // Component state
   currentView: 'list' | 'create' | 'detail' = 'list';
   courseId: number | null = null;
+  courseInfo: any = null;
   username: string = '';
   userRole: string = '';
   avatarUrl: string = '';
   isInstructor: boolean = false;
+  
+  // Navigation state
+  currentPage: string = 'Discussion';
+  leftMenuHidden: boolean = false;
   
   // Discussion data
   discussions: Discussion[] = [];
@@ -102,8 +108,10 @@ export class DiscussionComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private discussionService: DiscussionService,
     private discussionReplyService: DiscussionReplyService,
+    private courseService: CourseService,
     private sessionService: SessionService,
     private notificationService: NotificationService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -120,6 +128,7 @@ export class DiscussionComponent implements OnInit {
         this.newDiscussion.courseId = this.courseId;
         this.loadDiscussions();
         this.loadCourseData();
+        this.loadCourseInfo();
       }
     });
 
@@ -1705,6 +1714,76 @@ export class DiscussionComponent implements OnInit {
     const canNav = history && currentIndex !== undefined && currentIndex < history.length - 1;
     // Reduce logging to avoid console spam
     return canNav;
+  }
+
+  // Navigation methods
+  toggleLeftMenu(): void {
+    this.leftMenuHidden = !this.leftMenuHidden;
+  }
+
+  navigateToHome(): void {
+    if (this.courseId) {
+      this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToDiscussion(): void {
+    if (this.courseId) {
+      this.router.navigate(['/discussion'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToGrades(): void {
+    if (this.courseId) {
+      // Check if user is instructor/admin
+      if (this.isInstructor) {
+        // Navigate to instructor grades management page
+        this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
+      } else {
+        // Navigate to student grades view page
+        this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
+      }
+    }
+  }
+
+  navigateToModules(): void {
+    if (this.courseId) {
+      this.router.navigate(['/module'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToVideo(): void {
+    if (this.courseId) {
+      // Check if user is instructor/admin
+      if (this.isInstructor) {
+        // Navigate to video upload page for instructors
+        this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
+      } else {
+        // Navigate to learn online page for students
+        this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
+      }
+    }
+  }
+
+  navigateToTests(): void {
+    if (this.courseId) {
+      this.router.navigate(['/exam'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  // Load course information
+  loadCourseInfo(): void {
+    if (!this.courseId) return;
+
+    this.courseService.getCourseById(this.courseId).subscribe({
+      next: (course) => {
+        this.courseInfo = course;
+        console.log('✅ Course info loaded:', course);
+      },
+      error: (error) => {
+        console.error('❌ Error loading course info:', error);
+      }
+    });
   }
 
 }

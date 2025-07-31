@@ -104,11 +104,6 @@ export class ExamService {
     return this.apiService.put('/quizzes', exam);
   }
 
-  // Update quiz publish status only
-  updateQuizStatus(quizId: number, publish: boolean): Observable<any> {
-    return this.apiService.put(`/quizzes/${quizId}/status?publish=${publish}`, {});
-  }
-
   // Delete a quiz
   deleteQuiz(quizId: number): Observable<any> {
     return this.apiService.delete(`/quizzes/${quizId}`);
@@ -179,5 +174,10 @@ export class ExamService {
   // Upload question file
   uploadQuestionFile(formData: FormData): Observable<any> {
     return this.apiService.postFormData('/questions/upload-file', formData);
+  }
+
+  // Update quiz status (publish/unpublish)
+  updateQuizStatus(quizId: number, published: boolean): Observable<any> {
+    return this.apiService.put(`/quizzes/${quizId}/status?publish=${published}`, null);
   }
 }

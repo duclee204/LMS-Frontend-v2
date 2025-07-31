@@ -80,10 +80,13 @@ export class SessionService {
   public getCurrentUser(): any {
     if (isPlatformBrowser(this.platformId)) {
       const token = localStorage.getItem('token');
+      
       if (token && this.isTokenValid(token)) {
         try {
-          return JSON.parse(atob(token.split('.')[1]));
+          const decoded = JSON.parse(atob(token.split('.')[1]));
+          return decoded;
         } catch (error) {
+          console.error('❌ Error decoding JWT:', error);
           return null;
         }
       }

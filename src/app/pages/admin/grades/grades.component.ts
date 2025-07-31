@@ -1,8 +1,15 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Input, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
+import { SessionService } from '../../../services/session.service';
+import { NotificationService } from '../../../services/notification.service';
+import { CourseService } from '../../../services/course.service';
+import { NotificationComponent } from '../../../components/notification/notification.component';
+import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
+import { ProfileComponent } from '../../../components/profile/profile.component';
+import { UserService } from '../../../services/user.service';
 
 interface Grade {
   attemptId: number;
@@ -29,7 +36,7 @@ interface Grade {
 @Component({
   selector: 'app-grades',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationComponent, SidebarWrapperComponent, ProfileComponent],
   templateUrl: './grades.component.html',
   styleUrl: './grades.component.scss'
 })
@@ -49,9 +56,25 @@ export class GradesComponent implements OnInit {
   isGrading = false;
   isLoadingEssayDetails = false;
 
+  // Navigation properties
+  currentPage = 'Grades';
+  leftMenuHidden = false;
+  courseInfo: any = null;
+  
+  // Profile component properties
+  username: string = '';
+  userRole: string = '';
+  avatarUrl: string = '';
+
   constructor(
     private route: ActivatedRoute,
-    private apiService: ApiService
+    private router: Router,
+    private apiService: ApiService,
+    private sessionService: SessionService,
+    private notificationService: NotificationService,
+    private courseService: CourseService,
+    private userService: UserService,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   // Get correct answers count from score
@@ -75,12 +98,23 @@ export class GradesComponent implements OnInit {
   ngOnInit() {
     console.log('🔍 Grades component initialized');
     
+    // Initialize user profile and navigation
+    this.initializeUserProfile();
+    this.leftMenuHidden = false; // Show left menu by default
+    
     // Check if user is instructor/admin
     const token = localStorage.getItem('token');
     if (token) {
       const payload = JSON.parse(atob(token.split('.')[1]));
       this.isInstructor = payload.role === 'ROLE_instructor' || payload.role === 'ROLE_admin';
+      
+      // Ensure userRole is set correctly if not already set by sessionService
+      if (!this.userRole && payload.role) {
+        this.userRole = payload.role;
+      }
+      
       console.log('👤 User role:', payload.role, 'Is Instructor:', this.isInstructor);
+      console.log('🔍 Component userRole:', this.userRole);
     }
 
     // Get course ID from route params if available, or use input
@@ -89,6 +123,12 @@ export class GradesComponent implements OnInit {
         this.courseId = params['courseId'] ? parseInt(params['courseId']) : undefined;
       }
       console.log('📚 Course ID:', this.courseId);
+      
+      // Load course info if courseId is available
+      if (this.courseId) {
+        this.loadCourseInfo();
+      }
+      
       this.loadGrades();
     });
   }
@@ -318,5 +358,111 @@ export class GradesComponent implements OnInit {
 
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString('vi-VN');
+  }
+
+  // Navigation and UI methods
+  initializeUserProfile(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      // Try to get role from sessionService first
+      this.userRole = this.sessionService.getUserRole() || '';
+      
+      // If no role from sessionService, try to get from token as fallback
+      if (!this.userRole) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            this.userRole = payload.role || '';
+          } catch (error) {
+            console.warn('Error parsing token for role:', error);
+          }
+        }
+      }
+      
+      console.log('🔍 Grades component - User role:', this.userRole);
+      const userInfo = this.userService.getCurrentUserInfo();
+      this.username = userInfo.username || '';
+      this.avatarUrl = userInfo.avatarUrl || '';
+      console.log('👤 Grades component - User info:', { username: this.username, role: this.userRole });
+      
+      // Test getDisplayRole method immediately
+      console.log('🧪 Testing getDisplayRole:', this.getDisplayRole(this.userRole));
+    }
+  }
+
+  getDisplayRole(role: string): string {
+    console.log('🏷️ getDisplayRole called with:', role);
+    switch (role) {
+      case 'ROLE_ADMIN': return 'Quản trị viên';
+      case 'ROLE_INSTRUCTOR': return 'Giảng viên';
+      case 'ROLE_STUDENT': return 'Sinh viên';
+      default: 
+        console.log('⚠️ Unknown role:', role);
+        return 'Người dùng';
+    }
+  }
+
+  onProfileUpdate(): void {
+    this.initializeUserProfile();
+  }
+
+  onLogout(): void {
+    this.sessionService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  toggleLeftMenu(): void {
+    this.leftMenuHidden = !this.leftMenuHidden;
+  }
+
+  // Navigation methods
+  navigateToHome(): void {
+    if (this.courseId) {
+      this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToDiscussion(): void {
+    if (this.courseId) {
+      this.router.navigate(['/discussion'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToGrades(): void {
+    // Already on grades page
+  }
+
+  navigateToModules(): void {
+    if (this.courseId) {
+      this.router.navigate(['/module'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToVideo(): void {
+    if (this.courseId) {
+      // Admin always goes to video upload page (admin has instructor privileges)
+      this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToTests(): void {
+    if (this.courseId) {
+      this.router.navigate(['/exam'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  // Load course info
+  loadCourseInfo(): void {
+    if (!this.courseId) return;
+    
+    this.courseService.getCourseById(this.courseId).subscribe({
+      next: (course) => {
+        this.courseInfo = course;
+        console.log('✅ Course info loaded:', course);
+      },
+      error: (error) => {
+        console.error('❌ Error loading course info:', error);
+      }
+    });
   }
 }

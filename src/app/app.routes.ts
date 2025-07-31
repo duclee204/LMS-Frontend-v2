@@ -14,7 +14,6 @@ import { TakeExamComponent } from './pages/student and instructor/take-exam/take
 import { CategoryComponent } from './pages/admin/category/category.component';
 import { CourseManagementComponent } from './pages/admin/course-management/course-management.component';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard/admin-dashboard.component';
-import { CalendarComponent } from './pages/student and instructor/calendar/calendar.component';
 import { MessagesComponent } from './pages/student and instructor/messages/messages.component';
 import { HelpComponent } from './pages/student and instructor/help/help.component';
 import { SettingsComponent } from './pages/student and instructor/settings/settings.component';
@@ -27,14 +26,15 @@ import { ExamResultComponent } from './pages/student and instructor/exam-result/
 import { UserManagementComponent } from './pages/admin/user-management/user-management.component';
 import { GradesComponent } from './pages/admin/grades/grades.component';
 import { StudentGradesComponent } from './pages/student and instructor/student-grades/student-grades.component';
+import { CourseHomeComponent } from './pages/student and instructor/course-home/course-home.component';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent, data: { title: 'Trang đăng nhập' }, canActivate: [loginRedirectGuard] },
   { path: 'login', component: LoginComponent, data: { title: 'Trang đăng nhập' }, canActivate: [loginRedirectGuard] },
   { path: 'signup', component: SignupComponent, data: { title: 'Đăng ký tài khoản' }, canActivate: [loginRedirectGuard] },
   { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard' }, canActivate: [authGuard] },
+  { path: 'course-home', component: CourseHomeComponent, data: { title: 'Trang chủ khóa học' }, canActivate: [authGuard] },
   { path: 'courses', component: CoursesComponent, data: { title: 'Khóa học của tôi' }, canActivate: [authGuard] },
-  { path: 'calendar', component: CalendarComponent, data: { title: 'Lịch học' }, canActivate: [authGuard] },
   { path: 'messages', component: MessagesComponent, data: { title: 'Tin nhắn' }, canActivate: [authGuard] },
   { path: 'discussion', component: DiscussionComponent, data: { title: 'Thảo luận' }, canActivate: [authGuard] },
   { path: 'help', component: HelpComponent, data: { title: 'Trợ giúp' }, canActivate: [authGuard] },

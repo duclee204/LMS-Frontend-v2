@@ -7,7 +7,7 @@ import { ContentService, ContentDto, ContentItem } from '../../../services/conte
 import { CourseService, Course } from '../../../services/course.service';
 import { SessionService } from '../../../services/session.service';
 import { NotificationService } from '../../../services/notification.service';
-import { ModuleContentService, VideoItem, QuizItem, ModuleProgress } from '../../../services/module-content.service';
+import { ModuleContentService, VideoItem, QuizItem, ModuleProgress, ContentItem as ModuleContentItem } from '../../../services/module-content.service';
 import { ProfileComponent } from '../../../components/profile/profile.component';
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { NotificationComponent } from '../../../components/notification/notification.component';
@@ -30,7 +30,7 @@ export class ModuleComponent {
   public filteredModules: ModuleItem[] = [];
   public courseId: number | null = null;
   public courseInfo: Course | null = null; // 👈 Thêm thông tin khóa học
-  public currentPage = 'Home'; // Track current page for menu highlighting
+  public currentPage = 'Modules'; // Track current page for menu highlighting
 
   // Profile properties
   public username: string = '';
@@ -51,6 +51,7 @@ export class ModuleComponent {
   // Module content properties
   public moduleVideos: { [moduleId: number]: VideoItem[] } = {};
   public moduleQuizzes: { [moduleId: number]: QuizItem[] } = {};
+  public moduleContents: { [moduleId: number]: ModuleContentItem[] } = {};
   public moduleProgress: { [moduleId: number]: ModuleProgress } = {};
   
   public newModule = {
@@ -102,30 +103,15 @@ export class ModuleComponent {
     this.userRole = this.sessionService.getUserRole() || 'student';
     this.avatarUrl = ''; // Will use default avatar from ProfileComponent
     
-    // Debug logging for student access
-    console.log('🔍 Module component initialized');
-    console.log('👤 User role:', this.userRole);
-    console.log('🎓 Is Student:', this.sessionService.isStudent());
-    console.log('👨‍🏫 Can Manage Content:', this.canManageContent());
-    
     // Get courseId from query params
     if (isPlatformBrowser(this.platformId)) {
       this.route.queryParams.subscribe(params => {
         this.courseId = params['courseId'] ? +params['courseId'] : null;
         const courseName = params['courseName'];
         const requestedPage = params['page']; // Check for specific page request
-        console.log('📚 Course ID from query params:', this.courseId);
-        console.log('📚 Course Name from query params:', courseName);
-        console.log('📄 Requested page from query params:', requestedPage);
         
-        // Set current page based on query parameter or default to Home
-        if (requestedPage && requestedPage === 'Modules') {
-          this.currentPage = 'Modules';
-          console.log('✅ Setting current page to Modules from query params');
-        } else {
-          this.currentPage = 'Home';
-          console.log('✅ Setting current page to Home (default)');
-        }
+        // This is the Modules page, so current page should always be 'Modules'
+        this.currentPage = 'Modules';
         
         // If we have courseName from params, use it immediately for breadcrumb
         if (courseName && courseName.trim()) {
@@ -139,10 +125,8 @@ export class ModuleComponent {
             price: 0,
             thumbnailUrl: ''
           };
-          console.log('✅ Using course name from params:', decodeURIComponent(courseName));
         } else if (this.courseId) {
           // Fallback to API if no courseName in params
-          console.log('🔄 No courseName in params, trying API fallback...');
           this.loadCourseInfo();
         }
         
@@ -163,16 +147,9 @@ export class ModuleComponent {
     this.courseService.getCourseById(this.courseId).subscribe({
       next: (course: Course) => {
         this.courseInfo = course;
-        console.log('✅ Course info loaded successfully:', course.title);
-        console.log('📚 Full course data:', course);
       },
       error: (err: any) => {
         console.error('❌ Error loading course info:', err);
-        console.log('🔍 Error details:', {
-          status: err.status,
-          message: err.message,
-          error: err.error
-        });
         
         // Fallback: Create a temporary courseInfo with generic title
         this.courseInfo = {
@@ -185,7 +162,6 @@ export class ModuleComponent {
           price: 0,
           thumbnailUrl: ''
         };
-        console.log('🔧 Using fallback course title:', `Course ${this.courseId}`);
       }
     });
   }
@@ -378,7 +354,6 @@ export class ModuleComponent {
     if (this.sessionService.isStudent()) {
       this.contentService.getPublishedContentsByModule(module.moduleId).subscribe({
         next: (contents: ContentItem[]) => {
-          console.log('✅ Published contents loaded successfully:', contents);
           this.processModuleContents(module, contents, true); // true indicates this is for students
         },
         error: (err: any) => {
@@ -391,7 +366,6 @@ export class ModuleComponent {
       // For instructors/admins, use regular endpoint
       this.contentService.getContentsByModule(module.moduleId).subscribe({
         next: (contents: ContentItem[]) => {
-          console.log('✅ All contents loaded for instructor/admin:', contents);
           this.processModuleContents(module, contents, false); // false indicates this is for instructors/admins
         },
         error: (err: any) => {
@@ -412,11 +386,9 @@ export class ModuleComponent {
     // Filter content for students - only show published content
     if (isForStudent) {
       contents = contents.filter(content => content.isPublished);
-      console.log('Filtered published contents for student:', contents);
     }
     
     module.contents = contents.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
-    console.log('📋 Module contents after processing:', module.contents);
   }
 
   // Fallback method to load contents for students
@@ -448,14 +420,59 @@ export class ModuleComponent {
     
     console.log('🎥 Loading videos for module:', module.moduleId);
     
-    this.moduleContentService.getVideosByModule(module.moduleId).subscribe({
+    // For students, request only published videos
+    const publishedOnly = this.sessionService.isStudent();
+    
+    this.moduleContentService.getVideosByModule(module.moduleId, publishedOnly).subscribe({
       next: (videos: any[]) => {
         console.log('✅ Videos loaded successfully:', videos);
-        module.videos = videos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        console.log('🔍 Raw video response:', JSON.stringify(videos, null, 2));
+        
+        // Always apply client-side filtering for students as additional safety
+        if (publishedOnly) {
+          console.log('🔒 Applying student filtering for published videos only');
+          const filteredVideos = videos.filter(video => {
+            const isPublished = video.published === true || video.publish === true || video.status === 'published';
+            console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
+            return isPublished;
+          });
+          console.log('🔒 Final filtered videos for student:', filteredVideos);
+          module.videos = filteredVideos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        } else {
+          console.log('👨‍🏫 Loading all videos for instructor/admin');
+          module.videos = videos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        }
       },
       error: (err: any) => {
         console.error('❌ Error loading module videos:', err);
-        module.videos = [];
+        
+        // Fallback: if server doesn't support publishedOnly parameter, use client-side filtering
+        if (publishedOnly && module.moduleId) {
+          console.log('🔄 Server doesn\'t support publishedOnly for videos, falling back to client-side filtering');
+          console.log('🔄 Error details:', err.status, err.message);
+          this.moduleContentService.getVideosByModule(module.moduleId, false).subscribe({
+            next: (allVideos: any[]) => {
+              console.log('🔍 All videos received for filtering:', allVideos);
+              console.log('🔍 Raw video data sample:', JSON.stringify(allVideos[0], null, 2));
+              
+              // Filter published videos - check multiple possible fields
+              const publishedVideos = allVideos.filter(video => {
+                const isPublished = video.published === true || video.publish === true || video.status === 'published';
+                console.log(`Video "${video.title}": published=${video.published}, publish=${video.publish}, status=${video.status}, isPublished=${isPublished}`);
+                return isPublished;
+              });
+              
+              console.log('✅ Fallback: Filtered published videos client-side:', publishedVideos);
+              module.videos = publishedVideos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+            },
+            error: (fallbackErr: any) => {
+              console.error('❌ Fallback also failed:', fallbackErr);
+              module.videos = [];
+            }
+          });
+        } else {
+          module.videos = [];
+        }
       }
     });
   }
@@ -466,34 +483,211 @@ export class ModuleComponent {
     
     console.log('📝 Loading quizzes for module:', module.moduleId);
     
-    this.moduleContentService.getQuizzesByModule(module.moduleId).subscribe({
+    // For students, request only published quizzes
+    const publishedOnly = this.sessionService.isStudent();
+    
+    this.moduleContentService.getQuizzesByModule(module.moduleId, publishedOnly).subscribe({
       next: (quizzes: any[]) => {
         console.log('✅ Quizzes loaded successfully:', quizzes);
-        module.quizzes = quizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        console.log('🔍 Raw quiz response:', JSON.stringify(quizzes, null, 2));
+        
+        // Always apply client-side filtering for students as additional safety
+        if (publishedOnly) {
+          console.log('🔒 Applying student filtering for published quizzes only');
+          const filteredQuizzes = quizzes.filter(quiz => {
+            const isPublished = quiz.published === true || quiz.publish === true;
+            console.log(`Quiz "${quiz.title}": published=${quiz.published}, publish=${quiz.publish}, isPublished=${isPublished}`);
+            return isPublished;
+          });
+          console.log('🔒 Final filtered quizzes for student:', filteredQuizzes);
+          module.quizzes = filteredQuizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        } else {
+          console.log('👨‍🏫 Loading all quizzes for instructor/admin');
+          module.quizzes = quizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+        }
       },
       error: (err: any) => {
         console.error('❌ Error loading module quizzes:', err);
-        module.quizzes = [];
+        
+        // Fallback: if server doesn't support publishedOnly parameter, use client-side filtering
+        if (publishedOnly && module.moduleId) {
+          console.log('🔄 Server doesn\'t support publishedOnly for quizzes, falling back to client-side filtering');
+          console.log('🔄 Error details:', err.status, err.message);
+          this.moduleContentService.getQuizzesByModule(module.moduleId, false).subscribe({
+            next: (allQuizzes: any[]) => {
+              console.log('🔍 All quizzes received for filtering:', allQuizzes);
+              console.log('🔍 Raw quiz data sample:', JSON.stringify(allQuizzes[0], null, 2));
+              
+              // Filter published quizzes - check multiple possible fields
+              const publishedQuizzes = allQuizzes.filter(quiz => {
+                const isPublished = quiz.published === true || quiz.publish === true;
+                console.log(`Quiz "${quiz.title}": published=${quiz.published}, publish=${quiz.publish}, isPublished=${isPublished}`);
+                return isPublished;
+              });
+              
+              console.log('✅ Fallback: Filtered published quizzes client-side:', publishedQuizzes);
+              module.quizzes = publishedQuizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+            },
+            error: (fallbackErr: any) => {
+              console.error('❌ Fallback also failed:', fallbackErr);
+              module.quizzes = [];
+            }
+          });
+        } else {
+          module.quizzes = [];
+        }
       }
     });
   }
 
   // Load module progress for current user
   loadModuleProgress(module: ModuleItem): void {
-    if (!module.moduleId || !this.sessionService.isStudent()) return;
+    if (!module.moduleId) {
+      return;
+    }
     
-    console.log('📊 Loading progress for module:', module.moduleId);
+    if (!this.sessionService.isStudent()) {
+      return;
+    }
     
+    // Load overall module progress
     this.moduleContentService.getModuleProgress(module.moduleId).subscribe({
       next: (progress: any) => {
-        console.log('✅ Progress loaded successfully:', progress);
         module.progress = progress;
       },
       error: (err: any) => {
-        console.log('ℹ️ No progress found for module:', module.moduleId);
         module.progress = null;
       }
     });
+
+    // Load individual content progress
+    if (module.contents && module.contents.length > 0) {
+      module.contents.forEach(content => {
+        if (content.contentId) {
+          this.moduleContentService.getContentProgress(content.contentId).subscribe({
+            next: (progress: any) => {
+              content.isCompleted = progress.viewed || progress.completed || false;
+              content.viewedAt = progress.viewedAt;
+            },
+            error: (err: any) => {
+              content.isCompleted = false;
+            }
+          });
+        }
+      });
+    }
+
+    // Load individual video progress
+    if (module.videos && module.videos.length > 0) {
+      module.videos.forEach(video => {
+        if (video.videoId) {
+          this.moduleContentService.getVideoProgress(video.videoId).subscribe({
+            next: (progress: any) => {
+              video.isCompleted = progress.completed || false;
+              video.watchedPercentage = progress.watchedPercentage || 0;
+            },
+            error: (err: any) => {
+              video.isCompleted = false;
+              video.watchedPercentage = 0;
+            }
+          });
+        }
+      });
+    }
+  }
+
+  // Progress tracking methods
+
+  // Mark content as viewed when clicked
+  markContentAsViewed(content: ModuleContentItem): void {
+    if (!content.contentId) {
+      return;
+    }
+    
+    if (!this.sessionService.isStudent()) {
+      return;
+    }
+    
+    this.moduleContentService.markContentAsViewed(content.contentId).subscribe({
+      next: (response: any) => {
+        content.isCompleted = true;
+        content.viewedAt = new Date().toISOString();
+        
+        // Refresh module progress after content completion
+        this.refreshModuleProgress(content.moduleId!);
+      },
+      error: (err: any) => {
+        console.error('❌ Error marking content as viewed:', err);
+      }
+    });
+  }
+
+  // Mark test as completed (called when student submits test)
+  markTestAsCompleted(quizId: number, moduleId: number): void {
+    if (!this.sessionService.isStudent()) return;
+    
+    console.log('📝 Marking test as completed:', quizId);
+    
+    this.moduleContentService.completeTest(moduleId, { quizId }).subscribe({
+      next: (response: any) => {
+        console.log('✅ Test marked as completed successfully');
+        
+        // Update quiz in the UI
+        const module = this.modules.find(m => m.moduleId === moduleId);
+        if (module && module.quizzes) {
+          const quiz = module.quizzes.find(q => q.quizId === quizId);
+          if (quiz) {
+            quiz.isCompleted = true;
+          }
+        }
+        
+        // Refresh module progress after test completion
+        this.refreshModuleProgress(moduleId);
+      },
+      error: (err: any) => {
+        console.error('❌ Error marking test as completed:', err);
+      }
+    });
+  }
+
+  // Refresh module progress after any completion
+  refreshModuleProgress(moduleId: number): void {
+    const module = this.modules.find(m => m.moduleId === moduleId);
+    if (module) {
+      this.loadModuleProgress(module);
+    }
+  }
+
+  // Get completion percentage for a module based on actual item completion
+  getModuleCompletionPercentage(module: ModuleItem): number {
+    let totalItems = 0;
+    let completedItems = 0;
+    
+    // Count completed contents
+    if (module.contents && module.contents.length > 0) {
+      totalItems += module.contents.length;
+      completedItems += module.contents.filter(content => content.isCompleted).length;
+    }
+    
+    // Count completed videos  
+    if (module.videos && module.videos.length > 0) {
+      totalItems += module.videos.length;
+      completedItems += module.videos.filter(video => video.isCompleted).length;
+    }
+    
+    // Count completed quizzes
+    if (module.quizzes && module.quizzes.length > 0) {
+      totalItems += module.quizzes.length;
+      completedItems += module.quizzes.filter(quiz => quiz.isCompleted).length;
+    }
+    
+    return totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  }
+
+  // Check if module is completed - all items must be completed
+  isModuleCompleted(module: ModuleItem): boolean {
+    const percentage = this.getModuleCompletionPercentage(module);
+    return percentage === 100;
   }
 
   // View content (navigate to content viewer)
@@ -501,6 +695,30 @@ export class ModuleComponent {
     console.log('📖 Viewing content:', content.title);
     console.log('📖 Content type:', content.contentType);
     console.log('📖 Content URL:', content.contentUrl);
+    
+    // Mark content as viewed for progress tracking (only for students)
+    if (this.sessionService.isStudent() && content.contentId) {
+      // Update UI immediately
+      content.isCompleted = true;
+      content.viewedAt = new Date().toISOString();
+      
+      // Make API call to persist the progress
+      this.moduleContentService.markContentAsViewed(content.contentId).subscribe({
+        next: (response: any) => {
+          console.log('✅ Content marked as viewed successfully');
+          // Refresh module progress after content completion
+          if (content.moduleId) {
+            this.refreshModuleProgress(content.moduleId);
+          }
+        },
+        error: (err: any) => {
+          console.error('❌ Error marking content as viewed:', err);
+          // Revert UI state if API call fails
+          content.isCompleted = false;
+          content.viewedAt = undefined;
+        }
+      });
+    }
     
     if (content.contentUrl) {
       let fullUrl = content.contentUrl;
@@ -956,10 +1174,24 @@ export class ModuleComponent {
         if (response?.details) {
           successMessage = response.details;
         } else if (response?.totalContentCount !== undefined) {
-          const contentInfo = published 
-            ? `Đã xuất bản ${response.totalContentCount} nội dung bên trong module`
-            : `Đã ẩn ${response.totalContentCount} nội dung bên trong module`;
-          successMessage += ` ${contentInfo}.`;
+          const parts = [];
+          
+          if (response.totalContentCount > 0) {
+            parts.push(`${response.totalContentCount} nội dung`);
+          }
+          if (response.totalVideoCount > 0) {
+            parts.push(`${response.totalVideoCount} video`);
+          }
+          if (response.totalQuizCount > 0) {
+            parts.push(`${response.totalQuizCount} quiz`);
+          }
+          
+          if (parts.length > 0) {
+            const contentInfo = published 
+              ? `Đã xuất bản ${parts.join(', ')} bên trong module`
+              : `Đã ẩn ${parts.join(', ')} bên trong module`;
+            successMessage += ` ${contentInfo}.`;
+          }
         }
         
         this.notificationService.success(
@@ -1535,8 +1767,12 @@ export class ModuleComponent {
 
   // Navigation methods for left menu
   navigateToHome(): void {
-    this.currentPage = 'Home';
-    console.log('📍 Navigated to Home');
+    console.log('📍 Navigating to Home');
+    if (this.courseId) {
+      this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    } else {
+      this.router.navigate(['/course-home']);
+    }
   }
 
   navigateToDiscussion(): void {
@@ -1572,6 +1808,31 @@ export class ModuleComponent {
     console.log('📍 Navigated to Modules');
   }
 
+  navigateToVideo(): void {
+    console.log('📍 Navigating to Video');
+    
+    // Check if user is instructor/admin
+    if (this.canManageContent()) {
+      // For instructors, check if they want to navigate away or just show video content
+      // If called from clicking menu, navigate to video-upload page
+      // This navigation will take them to the upload page
+      this.router.navigate(['/video-upload'], {
+        queryParams: { 
+          courseId: this.courseId,
+          courseName: this.courseInfo?.title || `Course ${this.courseId}`
+        }
+      });
+    } else {
+      // For students, navigate to learn-online page (video viewing)
+      this.router.navigate(['/learn-online'], {
+        queryParams: { 
+          courseId: this.courseId,
+          courseName: this.courseInfo?.title || `Course ${this.courseId}`
+        }
+      });
+    }
+  }
+
   navigateToTests(): void {
     console.log('📍 Navigating to Tests');
     // Navigate to exam page with courseId
@@ -1590,12 +1851,172 @@ export class ModuleComponent {
 
   viewVideo(video: any): void {
     console.log('🎥 Viewing video:', video.title);
+    
     if (video.fileUrl) {
-      const fullUrl = `http://localhost:8080${video.fileUrl}`;
-      window.open(fullUrl, '_blank');
+      if (this.sessionService.isStudent()) {
+        // For students: create embedded video player with progress tracking
+        this.createVideoPlayerModal(video);
+      } else {
+        // For instructors: just open video in new tab
+        const fullUrl = `http://localhost:8080${video.fileUrl}`;
+        window.open(fullUrl, '_blank');
+      }
     } else {
       alert('Video không khả dụng.');
     }
+  }
+
+  // Create video player modal with progress tracking
+  createVideoPlayerModal(video: any): void {
+    // Create modal backdrop
+    const modalBackdrop = document.createElement('div');
+    modalBackdrop.className = 'video-modal-backdrop';
+    modalBackdrop.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'video-modal-content';
+    modalContent.style.cssText = `
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    `;
+
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '×';
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 10000;
+    `;
+
+    // Create video element
+    const videoElement = document.createElement('video');
+    videoElement.src = `http://localhost:8080${video.fileUrl}`;
+    videoElement.controls = true;
+    videoElement.style.cssText = `
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+    `;
+
+    // Video progress tracking variables
+    let lastWatchedPercentage = 0;
+    let watchedDuration = 0;
+    let totalDuration = 0;
+
+    // Load existing progress if any
+    if (video.watchedPercentage) {
+      lastWatchedPercentage = video.watchedPercentage;
+    }
+
+    // Video event handlers
+    videoElement.addEventListener('loadedmetadata', () => {
+      totalDuration = videoElement.duration;
+      console.log('📊 Video duration:', totalDuration);
+      
+      // Jump to last watched position if available
+      if (video.watchedPercentage && video.watchedPercentage > 0) {
+        const lastPosition = (video.watchedPercentage / 100) * totalDuration;
+        videoElement.currentTime = lastPosition;
+        watchedDuration = lastPosition;
+      }
+    });
+
+    videoElement.addEventListener('timeupdate', () => {
+      if (totalDuration > 0) {
+        const currentTime = videoElement.currentTime;
+        const currentPercentage = (currentTime / totalDuration) * 100;
+        
+        // Update watched duration if current time is greater
+        if (currentTime > watchedDuration) {
+          watchedDuration = currentTime;
+        }
+
+        // Update progress every 5% watched
+        if (Math.floor(currentPercentage / 5) > Math.floor(lastWatchedPercentage / 5)) {
+          lastWatchedPercentage = currentPercentage;
+          this.updateVideoProgress(video, watchedDuration, totalDuration, currentPercentage);
+        }
+      }
+    });
+
+    videoElement.addEventListener('ended', () => {
+      // Mark as completed when video ends
+      this.updateVideoProgress(video, totalDuration, totalDuration, 100);
+    });
+
+    // Close modal handlers
+    const closeModal = () => {
+      document.body.removeChild(modalBackdrop);
+      // Final progress update when closing
+      if (totalDuration > 0 && watchedDuration > 0) {
+        const finalPercentage = (watchedDuration / totalDuration) * 100;
+        this.updateVideoProgress(video, watchedDuration, totalDuration, finalPercentage);
+      }
+    };
+
+    closeButton.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) {
+        closeModal();
+      }
+    });
+
+    // Assemble modal
+    modalContent.appendChild(closeButton);
+    modalContent.appendChild(videoElement);
+    modalBackdrop.appendChild(modalContent);
+    document.body.appendChild(modalBackdrop);
+  }
+
+  // Update video progress
+  updateVideoProgress(video: any, watchedDuration: number, totalDuration: number, watchedPercentage: number): void {
+    const completed = watchedPercentage >= 90; // 90% threshold for completion
+    
+    // Update UI immediately
+    video.watchedPercentage = watchedPercentage;
+    video.isCompleted = completed;
+    
+    console.log(`📊 Video progress: ${watchedPercentage.toFixed(1)}% watched`);
+    
+    // Make API call to persist progress
+    this.moduleContentService.updateVideoWatchProgress(
+      video.videoId,
+      watchedDuration,
+      totalDuration
+    ).subscribe({
+      next: (response: any) => {
+        console.log('✅ Video progress updated successfully');
+        // Refresh module progress if video is completed
+        if (completed && video.moduleId) {
+          this.refreshModuleProgress(video.moduleId);
+        }
+      },
+      error: (err: any) => {
+        console.error('❌ Error updating video progress:', err);
+      }
+    });
   }
 
   formatDuration(duration: number): string {
@@ -1624,5 +2045,158 @@ export class ModuleComponent {
         quizId: quiz.quizId
       }
     });
+  }
+
+  // Video management methods
+  toggleVideoDropdown(video: any): void {
+    // Close all other dropdowns first
+    this.modules.forEach(module => {
+      if (module.videos) {
+        module.videos.forEach(v => {
+          if (v.videoId !== video.videoId) {
+            v.showDropdown = false;
+          }
+        });
+      }
+      if (module.quizzes) {
+        module.quizzes.forEach(q => q.showDropdown = false);
+      }
+    });
+    
+    video.showDropdown = !video.showDropdown;
+    this.cdr.detectChanges();
+  }
+
+  changeVideoStatus(video: any, published: boolean): void {
+    this.moduleContentService.updateVideoStatus(video.videoId, published).subscribe({
+      next: () => {
+        video.published = published;
+        video.showDropdown = false;
+        this.showAlert(
+          published ? 'Video đã được xuất bản' : 'Video đã được hủy xuất bản',
+          'success'
+        );
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error updating video status:', error);
+        this.showAlert('Lỗi khi cập nhật trạng thái video', 'error');
+      }
+    });
+  }
+
+  editVideo(video: any): void {
+    video.showDropdown = false;
+    // Navigate to video edit page or open edit modal
+    this.router.navigate(['/video-upload'], {
+      queryParams: {
+        courseId: this.courseId,
+        videoId: video.videoId,
+        edit: true
+      }
+    });
+  }
+
+  deleteVideo(video: any): void {
+    video.showDropdown = false;
+    if (confirm(`Bạn có chắc chắn muốn xóa video "${video.title}"?`)) {
+      this.moduleContentService.deleteVideo(video.videoId).subscribe({
+        next: () => {
+          // Remove video from the module
+          this.modules.forEach(module => {
+            if (module.videos) {
+              module.videos = module.videos.filter(v => v.videoId !== video.videoId);
+            }
+          });
+          this.onSearch(); // Update filtered modules
+          this.showAlert('Video đã được xóa thành công', 'success');
+        },
+        error: (error) => {
+          console.error('Error deleting video:', error);
+          this.showAlert('Lỗi khi xóa video', 'error');
+        }
+      });
+    }
+  }
+
+  // Quiz management methods
+  toggleQuizDropdown(quiz: any): void {
+    // Close all other dropdowns first
+    this.modules.forEach(module => {
+      if (module.videos) {
+        module.videos.forEach(v => v.showDropdown = false);
+      }
+      if (module.quizzes) {
+        module.quizzes.forEach(q => {
+          if (q.quizId !== quiz.quizId) {
+            q.showDropdown = false;
+          }
+        });
+      }
+    });
+    
+    quiz.showDropdown = !quiz.showDropdown;
+    this.cdr.detectChanges();
+  }
+
+  changeQuizStatus(quiz: any, published: boolean): void {
+    this.moduleContentService.updateQuizStatus(quiz.quizId, published).subscribe({
+      next: () => {
+        quiz.published = published;
+        quiz.showDropdown = false;
+        this.showAlert(
+          published ? 'Test đã được xuất bản' : 'Test đã được hủy xuất bản',
+          'success'
+        );
+        
+        // Reload quizzes để cập nhật UI
+        const moduleIndex = this.modules.findIndex(m => 
+          m.quizzes && m.quizzes.some((q: any) => q.quizId === quiz.quizId)
+        );
+        if (moduleIndex !== -1) {
+          this.loadModuleQuizzes(this.modules[moduleIndex]);
+        }
+        
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error updating quiz status:', error);
+        this.showAlert('Lỗi khi cập nhật trạng thái test', 'error');
+      }
+    });
+  }
+
+  editQuiz(quiz: any): void {
+    quiz.showDropdown = false;
+    // Navigate to quiz edit page
+    this.router.navigate(['/exam'], {
+      queryParams: {
+        courseId: this.courseId,
+        quizId: quiz.quizId,
+        edit: true
+      }
+    });
+  }
+
+  deleteQuiz(quiz: any): void {
+    quiz.showDropdown = false;
+    if (confirm(`Bạn có chắc chắn muốn xóa test "${quiz.title}"?`)) {
+      this.moduleContentService.deleteQuiz(quiz.quizId).subscribe({
+        next: () => {
+          // Remove quiz from the module
+          this.modules.forEach(module => {
+            if (module.quizzes) {
+              module.quizzes = module.quizzes.filter(q => q.quizId !== quiz.quizId);
+            }
+          });
+          this.onSearch(); // Update filtered modules
+          this.showAlert('Test đã được xóa thành công', 'success');
+        },
+        error: (error) => {
+          console.error('Error deleting quiz:', error);
+          this.showAlert('Lỗi khi xóa test', 'error');
+        }
+      });
+    }
   }
 }

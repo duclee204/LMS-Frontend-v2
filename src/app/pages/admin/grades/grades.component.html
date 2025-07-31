@@ -1,5 +1,87 @@
-<div class="grades-container">
-  <div class="grades-header">
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="userRole === 'ROLE_INSTRUCTOR' ? 'Giảng viên' : 
+               userRole === 'ROLE_ADMIN' ? 'Quản trị viên' : 
+               userRole === 'ROLE_STUDENT' ? 'Sinh viên' : 
+               (isInstructor ? 'Giảng viên' : 'Người dùng')"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || (courseId ? ('Course ' + courseId) : 'Grades Management') }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item current-page">Grades</span>
+        </nav>
+      </div>
+
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+            <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Video' }">
+              <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
+              <span class="menu-text">Video</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="right-content">
+          <div class="grades-container">
+            <div class="grades-header">
     <h2>
       <i class="fas fa-chart-bar"></i>
       {{ isInstructor ? 'Quản lý điểm' : 'Điểm của bạn' }}
@@ -94,6 +176,11 @@
         </tr>
       </tbody>
     </table>
+  </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </div>
 

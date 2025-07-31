@@ -1,23 +1,19 @@
 <div class="layout-row">
   <!-- Notification Component -->
   <app-notification></app-notification>
-  
+
   <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
     <app-sidebar-wrapper></app-sidebar-wrapper>
   </aside>
-  
+
   <div class="main-content">
     <!-- Profile component -->
     <div class="profile-header">
-      <app-profile 
-        [username]="username"
-        [role]="getDisplayRole(userRole)"
-        [avatarUrl]="avatarUrl"
-        (profileUpdate)="onProfileUpdate()"
-        (logout)="onLogout()">
+      <app-profile [username]="username" [role]="getDisplayRole(userRole)" [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()" (logout)="onLogout()">
       </app-profile>
     </div>
-    
+
     <main>
       <div class="breadcrumb">
         <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
@@ -32,213 +28,339 @@
         </nav>
       </div>
 
-    <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
-      <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
-        <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
-          <a href="#" (click)="navigateToHome(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Home' }">
-            <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
-            <span class="menu-text">Home</span>
-          </a>
-        </div>
-        <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
-          <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
-            <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
-            <span class="menu-text">Discussion</span>
-          </a>
-        </div>
-        <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
-          <a href="#" (click)="navigateToGrades(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Grades' }">
-            <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
-            <span class="menu-text">Grades</span>
-          </a>
-        </div>
-        <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
-          <a href="#" (click)="navigateToModules(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Modules' }">
-            <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
-            <span class="menu-text">Modules</span>
-          </a>
-        </div>
-        <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
-          <a href="#" (click)="navigateToTests(); $event.preventDefault()" [ngClass]="{ 'active-link': currentPage === 'Tests' }">
-            <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
-            <span class="menu-text">Tests</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="right-content">
-        <!-- Home Content -->
-        <div class="course-content" *ngIf="currentPage === 'Home'">
-          <h2>Welcome to Course Home</h2>
-          <p>This is the home page of your course. Here you can find general information and announcements.</p>
-        </div>
-
-        <!-- Discussion Content -->
-        <div class="course-content" *ngIf="currentPage === 'Discussion'">
-          <h2>Course Discussion</h2>
-          <p>Join the discussion with your classmates and instructors.</p>
-        </div>
-
-        <!-- Grades Content -->
-        <div class="course-content" *ngIf="currentPage === 'Grades'">
-          <app-student-grades *ngIf="isStudent()"></app-student-grades>
-          <app-grades *ngIf="canManageContent()" [courseId]="courseId || undefined"></app-grades>
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+            <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Video' }">
+              <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
+              <span class="menu-text">Video</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
         </div>
 
-        <!-- Modules Content -->
-        <div class="course-content" *ngIf="currentPage === 'Modules'">
-          <div class="top-bar" [ngClass]="{'has-add-button': canManageContent()}">
-            <button class="add-module" (click)="openAddModuleModal()" *ngIf="canManageContent()">
-              <i class="fas fa-plus"></i> Module
-            </button>
-            <div class="filters">
-              <div class="search-wrapper">
-                <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Search" />
-                <i class="fas fa-search"></i>
+          <div class="right-content">
+            <!-- Home Content -->
+            <div class="course-content" *ngIf="currentPage === 'Home'">
+              <h2>Welcome to Course Home</h2>
+              <p>This is the home page of your course. Here you can find general information and announcements.</p>
+            </div>
+
+            <!-- Discussion Content -->
+            <div class="course-content" *ngIf="currentPage === 'Discussion'">
+              <h2>Course Discussion</h2>
+              <p>Join the discussion with your classmates and instructors.</p>
+            </div>
+
+            <!-- Grades Content -->
+            <div class="course-content" *ngIf="currentPage === 'Grades'">
+              <app-student-grades *ngIf="isStudent()"></app-student-grades>
+              <app-grades *ngIf="canManageContent()" [courseId]="courseId || undefined"></app-grades>
+            </div>
+
+            <!-- Video Content -->
+            <div class="course-content" *ngIf="currentPage === 'Video'">
+              <h2>Video Management</h2>
+              <p *ngIf="canManageContent()">Upload and manage course videos. Click the Video menu to access video upload functionality.</p>
+              <p *ngIf="!canManageContent()">Access course videos and learning materials.</p>
+              <div *ngIf="canManageContent()" class="video-management-actions">
+                <button class="btn btn-primary" (click)="navigateToVideo()">
+                  <i class="fas fa-upload"></i> Upload Video
+                </button>
               </div>
             </div>
-          </div>
 
-          <div class="module-list">
-            <div *ngFor="let item of filteredModules; let i = index; trackBy: trackModuleById" class="module-item" role="listitem">
-              <div class="module-header">
-                <div class="left">
-                  <!-- Arrow icon for expand/collapse -->
-                  <button (click)="toggleModule(item)" 
-                          style="background: transparent; color: black; border: none; padding: 8px; margin-right: 10px; cursor: pointer;">
-                    {{ item.expanded ? '▼' : '►' }}
-                  </button>
-                  <span class="module-title">{{ item.title }}</span>
-                </div>
-                <div class="module-actions">
-                  <!-- Add Content button -->
-                  <button class="add-content-btn" 
-                          (click)="openAddContentModal(item.moduleId!)" 
-                          *ngIf="canManageContent() && item.moduleId"
-                          title="Add Content">
-                    <i class="fas fa-plus"></i> Content
-                  </button>
-                  
-                  <!-- Publish status icon - hide for students -->
-                  <div class="icon-cell" *ngIf="canManageContent()">
-                    <i [ngClass]="item.status === 'Published' ? 'fas fa-check-circle' : 'fas fa-ban'"
-                      [style.color]="item.status === 'Published' ? '#2ecc71' : '#e74c3c'"></i>
-                    <div class="dropdown-container" (click)="$event.stopPropagation()">
-                      <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleDropdown(item)"></i>
-
-                      <div class="dropdown-menu" *ngIf="item.showDropdown">
-                        <div class="dropdown-item" *ngIf="item.status === 'NotPublished'" (click)="changeStatus(item, 'Published')">Xuất bản</div>
-                        <div class="dropdown-item" *ngIf="item.status === 'Published'" (click)="changeStatus(item, 'NotPublished')">Hủy xuất bản</div>
-                        <div class="dropdown-item" (click)="editModule(item)">Sửa</div>
-                        <div class="dropdown-item" (click)="deleteModule(item)">Xóa</div>
-                      </div>
-                    </div>
+            <!-- Modules Content -->
+            <div class="course-content" *ngIf="currentPage === 'Modules'">
+              <div class="top-bar" [ngClass]="{'has-add-button': canManageContent()}">
+                <button class="add-module" (click)="openAddModuleModal()" *ngIf="canManageContent()">
+                  <i class="fas fa-plus"></i> Module
+                </button>
+                <div class="filters">
+                  <div class="search-wrapper">
+                    <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Search" />
+                    <i class="fas fa-search"></i>
                   </div>
                 </div>
               </div>
-              
-              <!-- Module Contents (Expanded View) -->
-              <div class="module-contents" *ngIf="item.expanded">
-                <div class="content-list" *ngIf="item.contents && item.contents.length > 0">
-                  <div *ngFor="let content of item.contents; trackBy: trackContentById" class="content-item clickable" (click)="viewContent(content)">
-                    <div class="content-info">
-                      <!-- Simple and reliable icon solution -->
-                      <span class="content-type-icon">
-                        {{ content.contentType === 'document' ? '📄' : '🔗' }}
-                      </span>
-                      <div class="content-details">
-                        <span class="content-title">{{ content.title }}</span>
-                        <span class="content-description" *ngIf="content.description">{{ content.description }}</span>
-                        <div class="content-meta">
-                          <span class="content-type-badge" [ngClass]="'type-' + content.contentType">
-                            {{ content.contentType | titlecase }}
+
+              <div class="module-list">
+                <div *ngFor="let item of filteredModules; let i = index; trackBy: trackModuleById" class="module-item"
+                  role="listitem">
+                  <div class="module-header">
+                    <div class="left">
+                      <!-- Arrow icon for expand/collapse -->
+                      <button (click)="toggleModule(item)"
+                        style="background: transparent; color: black; border: none; padding: 8px; margin-right: 10px; cursor: pointer;">
+                        {{ item.expanded ? '▼' : '►' }}
+                      </button>
+                      <span class="module-title">{{ item.title }}</span>
+                      
+                      <!-- Module progress for students -->
+                      <div class="module-progress" *ngIf="sessionService.isStudent()">
+                        <span class="progress-text" *ngIf="item.progress">
+                          {{ getModuleCompletionPercentage(item) }}% hoàn thành
+                        </span>
+                        <i class="fas fa-trophy" 
+                           *ngIf="isModuleCompleted(item)" 
+                           style="color: #f39c12; margin-left: 8px;" 
+                           title="Module đã hoàn thành"></i>
+                      </div>
+                    </div>
+                    <div class="module-actions">
+                      <!-- Add Content button -->
+                      <button class="add-content-btn" (click)="openAddContentModal(item.moduleId!)"
+                        *ngIf="canManageContent() && item.moduleId" title="Add Content">
+                        <i class="fas fa-plus"></i> Content
+                      </button>
+
+                      <!-- Publish status icon - hide for students -->
+                      <div class="icon-cell" *ngIf="canManageContent()">
+                        <i [ngClass]="item.status === 'Published' ? 'fas fa-check-circle' : 'fas fa-ban'"
+                          [style.color]="item.status === 'Published' ? '#2ecc71' : '#e74c3c'"></i>
+                        <div class="dropdown-container" (click)="$event.stopPropagation()">
+                          <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleDropdown(item)"></i>
+
+                          <div class="dropdown-menu" *ngIf="item.showDropdown">
+                            <div class="dropdown-item" *ngIf="item.status === 'NotPublished'"
+                              (click)="changeStatus(item, 'Published')">Xuất bản</div>
+                            <div class="dropdown-item" *ngIf="item.status === 'Published'"
+                              (click)="changeStatus(item, 'NotPublished')">Hủy xuất bản</div>
+                            <div class="dropdown-item" (click)="editModule(item)">Sửa</div>
+                            <div class="dropdown-item" (click)="deleteModule(item)">Xóa</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Module Contents (Expanded View) -->
+                  <div class="module-contents" *ngIf="item.expanded">
+                    <div class="content-list" *ngIf="item.contents && item.contents.length > 0">
+                      <div *ngFor="let content of item.contents; trackBy: trackContentById"
+                        class="content-item clickable" (click)="viewContent(content)">
+                        <div class="content-info">
+                          <!-- Simple and reliable icon solution -->
+                          <span class="content-type-icon">
+                            {{ content.contentType === 'document' ? '📄' : '🔗' }}
                           </span>
+                          <div class="content-details">
+                            <span class="content-title">{{ content.title }}</span>
+                            <span class="content-description" *ngIf="content.description">{{ content.description
+                              }}</span>
+                            <div class="content-meta">
+                              <span class="content-type-badge" [ngClass]="'type-' + content.contentType">
+                                {{ content.contentType | titlecase }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Progress indicator for students -->
+                        <div class="progress-indicator" *ngIf="sessionService.isStudent()">
+                          <i class="fas fa-check-circle" 
+                             *ngIf="content.isCompleted" 
+                             style="color: #2ecc71;" 
+                             title="Đã hoàn thành"></i>
+                          <i class="far fa-circle" 
+                             *ngIf="!content.isCompleted" 
+                             style="color: #95a5a6;" 
+                             title="Chưa hoàn thành"></i>
+                        </div>
+                        
+                        <!-- Content publish status and actions - hide for students -->
+                        <div class="content-status" *ngIf="canManageContent()">
+                          <i [ngClass]="content.isPublished ? 'fas fa-check-circle' : 'fas fa-ban'"
+                            [style.color]="content.isPublished ? '#2ecc71' : '#e74c3c'"
+                            title="{{ content.isPublished ? 'Published' : 'Not Published' }}"></i>
+                          <div class="dropdown-container" (click)="$event.stopPropagation()">
+                            <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleContentDropdown(content)"></i>
+                            <div class="dropdown-menu" *ngIf="content.showDropdown">
+                              <div class="dropdown-item" *ngIf="!content.isPublished"
+                                (click)="changeContentStatus(content, true)">Xuất bản</div>
+                              <div class="dropdown-item" *ngIf="content.isPublished"
+                                (click)="changeContentStatus(content, false)">Hủy xuất bản</div>
+                              <div class="dropdown-item" (click)="editContent(content)">Sửa</div>
+                              <div class="dropdown-item" (click)="deleteContent(content)">Xóa</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <!-- Content publish status and actions - hide for students -->
-                    <div class="content-status" *ngIf="canManageContent()">
-                      <i [ngClass]="content.isPublished ? 'fas fa-check-circle' : 'fas fa-ban'"
-                         [style.color]="content.isPublished ? '#2ecc71' : '#e74c3c'"
-                         title="{{ content.isPublished ? 'Published' : 'Not Published' }}"></i>
-                      <div class="dropdown-container" (click)="$event.stopPropagation()">
-                        <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleContentDropdown(content)"></i>
-                        <div class="dropdown-menu" *ngIf="content.showDropdown">
-                          <div class="dropdown-item" *ngIf="!content.isPublished" (click)="changeContentStatus(content, true)">Xuất bản</div>
-                          <div class="dropdown-item" *ngIf="content.isPublished" (click)="changeContentStatus(content, false)">Hủy xuất bản</div>
-                          <div class="dropdown-item" (click)="editContent(content)">Sửa</div>
-                          <div class="dropdown-item" (click)="deleteContent(content)">Xóa</div>
-                        </div>
-                      </div>
+                    <div class="no-contents" *ngIf="!item.contents || item.contents.length === 0">
+                      <p>Chưa có nội dung nào trong module này.</p>
                     </div>
-                  </div>
-                </div>
-                <div class="no-contents" *ngIf="!item.contents || item.contents.length === 0">
-                  <p>Chưa có nội dung nào trong module này.</p>
-                </div>
 
-                <!-- Module Videos -->
-                <div class="video-list" *ngIf="item.videos && item.videos.length > 0">
-                  <h4 class="section-title">📹 Videos</h4>
-                  <div *ngFor="let video of item.videos; trackBy: trackVideoById" class="video-item clickable" (click)="viewVideo(video)">
-                    <div class="video-info">
-                      <span class="video-icon">🎥</span>
-                      <div class="video-details">
-                        <span class="video-title">{{ video.title }}</span>
-                        <span class="video-description" *ngIf="video.description">{{ video.description }}</span>
-                        <div class="video-meta">
-                          <span class="video-duration" *ngIf="video.duration">{{ formatDuration(video.duration) }}</span>
+                    <!-- Module Videos -->
+                    <div class="video-list" *ngIf="item.videos && item.videos.length > 0">
+                      <h4 class="section-title">📹 Videos</h4>
+                      <div *ngFor="let video of item.videos; trackBy: trackVideoById" class="video-item clickable"
+                        (click)="viewVideo(video)">
+                        <div class="video-info">
+                          <span class="video-icon">🎥</span>
+                          <div class="video-details">
+                            <span class="video-title">{{ video.title }}</span>
+                            <span class="video-description" *ngIf="video.description">{{ video.description }}</span>
+                            <div class="video-meta">
+                              <span class="video-duration" *ngIf="video.duration">{{ formatDuration(video.duration)
+                                }}</span>
+                              <!-- Progress percentage for students -->
+                              <span class="video-progress" *ngIf="sessionService.isStudent() && video.watchedPercentage">
+                                {{ video.watchedPercentage.toFixed(0) }}% đã xem
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Progress indicator for students -->
+                        <div class="progress-indicator" *ngIf="sessionService.isStudent()">
+                          <i class="fas fa-check-circle" 
+                             *ngIf="video.isCompleted" 
+                             style="color: #2ecc71;" 
+                             title="Đã hoàn thành"></i>
+                          <i class="fas fa-play-circle" 
+                             *ngIf="!video.isCompleted && video.watchedPercentage && video.watchedPercentage > 0" 
+                             style="color: #f39c12;" 
+                             title="Đang xem ({{ video.watchedPercentage.toFixed(0) }}%)"></i>
+                          <i class="far fa-play-circle" 
+                             *ngIf="!video.isCompleted && (!video.watchedPercentage || video.watchedPercentage === 0)" 
+                             style="color: #95a5a6;" 
+                             title="Chưa xem"></i>
+                        </div>
+                        
+                        <div class="video-status" *ngIf="canManageContent()">
+                          <!-- Management controls for instructors -->
+                          <div class="video-management">
+                            <i [ngClass]="video.published ? 'fas fa-check-circle' : 'fas fa-ban'"
+                              [style.color]="video.published ? '#2ecc71' : '#e74c3c'"
+                              title="{{ video.published ? 'Published' : 'Not Published' }}"></i>
+                            <div class="dropdown-container" (click)="$event.stopPropagation()">
+                              <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleVideoDropdown(video)"></i>
+                              <div class="dropdown-menu" *ngIf="video.showDropdown">
+                                <div class="dropdown-item" *ngIf="!video.published"
+                                  (click)="changeVideoStatus(video, true)">Xuất bản</div>
+                                <div class="dropdown-item" *ngIf="video.published"
+                                  (click)="changeVideoStatus(video, false)">Hủy xuất bản</div>
+                                <div class="dropdown-item" (click)="editVideo(video)">Sửa</div>
+                                <div class="dropdown-item" (click)="deleteVideo(video)">Xóa</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div class="video-status" *ngIf="item.progress">
-                      <i class="fas fa-check-circle" *ngIf="item.progress.videoCompleted" style="color: #2ecc71;" title="Completed"></i>
-                      <i class="fas fa-play-circle" *ngIf="!item.progress.videoCompleted" style="color: #3498db;" title="Not completed"></i>
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Module Quizzes -->
-                <div class="quiz-list" *ngIf="item.quizzes && item.quizzes.length > 0">
-                  <h4 class="section-title">📝 Tests</h4>
-                  <div *ngFor="let quiz of item.quizzes; trackBy: trackQuizById" class="quiz-item clickable" (click)="viewQuiz(item, quiz)">
-                    <div class="quiz-info">
-                      <span class="quiz-icon">📋</span>
-                      <div class="quiz-details">
-                        <span class="quiz-title">{{ quiz.title }}</span>
-                        <span class="quiz-description" *ngIf="quiz.description">{{ quiz.description }}</span>
-                        <div class="quiz-meta">
-                          <span class="quiz-type-badge" [ngClass]="'type-' + quiz.quizType.toLowerCase()">
-                            {{ quiz.quizType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}
-                          </span>
-                          <span class="quiz-time" *ngIf="quiz.timeLimit">{{ quiz.timeLimit }} phút</span>
+                    <!-- Module Quizzes -->
+                    <div class="quiz-list" *ngIf="item.quizzes && item.quizzes.length > 0">
+                      <h4 class="section-title">📝 Tests</h4>
+                      <div *ngFor="let quiz of item.quizzes; trackBy: trackQuizById" class="quiz-item clickable"
+                        (click)="viewQuiz(item, quiz)">
+                        <div class="quiz-info">
+                          <span class="quiz-icon">📋</span>
+                          <div class="quiz-details">
+                            <span class="quiz-title">{{ quiz.title }}</span>
+                            <span class="quiz-description" *ngIf="quiz.description">{{ quiz.description }}</span>
+                            <div class="quiz-meta">
+                              <span class="quiz-type-badge" [ngClass]="'type-' + quiz.quizType.toLowerCase()">
+                                {{ quiz.quizType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Tự luận' }}
+                              </span>
+                              <span class="quiz-time" *ngIf="quiz.timeLimit">{{ quiz.timeLimit }} phút</span>
+                              <!-- Score display for completed quizzes -->
+                              <span class="quiz-score" *ngIf="sessionService.isStudent() && quiz.isCompleted && quiz.score !== undefined">
+                                Điểm: {{ quiz.score }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Progress indicator for students -->
+                        <div class="progress-indicator" *ngIf="sessionService.isStudent()">
+                          <i class="fas fa-check-circle" 
+                             *ngIf="quiz.isCompleted" 
+                             style="color: #2ecc71;" 
+                             title="Đã hoàn thành"></i>
+                          <i class="fas fa-edit" 
+                             *ngIf="!quiz.isCompleted" 
+                             style="color: #3498db;" 
+                             title="Chưa làm bài"></i>
+                        </div>
+                        
+                        <div class="quiz-status" *ngIf="canManageContent()">
+                          <!-- Management controls for instructors -->
+                          <div class="quiz-management">
+                            <i [ngClass]="quiz.published ? 'fas fa-check-circle' : 'fas fa-ban'"
+                              [style.color]="quiz.published ? '#2ecc71' : '#e74c3c'"
+                              title="{{ quiz.published ? 'Published' : 'Not Published' }}"></i>
+                            <div class="dropdown-container" (click)="$event.stopPropagation()">
+                              <i class="fas fa-ellipsis-v dropdown-toggle" (click)="toggleQuizDropdown(quiz)"></i>
+                              <div class="dropdown-menu" *ngIf="quiz.showDropdown">
+                                <div class="dropdown-item" *ngIf="!quiz.published"
+                                  (click)="changeQuizStatus(quiz, true)">Xuất bản</div>
+                                <div class="dropdown-item" *ngIf="quiz.published"
+                                  (click)="changeQuizStatus(quiz, false)">Hủy xuất bản</div>
+                                <div class="dropdown-item" (click)="editQuiz(quiz)">Sửa</div>
+                                <div class="dropdown-item" (click)="deleteQuiz(quiz)">Xóa</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="quiz-status">
-                      <i class="fas fa-check-circle" *ngIf="item.progress && item.progress.testCompleted" style="color: #2ecc71;" title="Completed"></i>
-                      <i class="fas fa-play-circle" *ngIf="!item.progress || !item.progress.testCompleted" style="color: #3498db;" title="Available"></i>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <p *ngIf="filteredModules.length === 0" style="color: #666; margin-top: 1rem; text-align: center;">Chưa có Module nào.</p>
+              <p *ngIf="filteredModules.length === 0" style="color: #666; margin-top: 1rem; text-align: center;">Chưa có
+                Module nào.</p>
 
-          <div class="upload-area" (click)="fileInput.click()" role="button" tabindex="0" *ngIf="canManageContent() && filteredModules.length > 0">
-            <div class="upload-icon">
-              <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #6c757d; margin-bottom: 12px;"></i>
+              <div class="upload-area" (click)="fileInput.click()" role="button" tabindex="0"
+                *ngIf="canManageContent() && filteredModules.length > 0">
+                <div class="upload-icon">
+                  <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: #6c757d; margin-bottom: 12px;"></i>
+                </div>
+                <p>Drop files here to add to a module</p>
+                <p class="choose-files">or choose files to upload</p>
+                <input type="file" #fileInput hidden (change)="handleFileUpload($event)" />
+              </div>
             </div>
-            <p>Drop files here to add to a module</p>
-            <p class="choose-files">or choose files to upload</p>
-            <input type="file" #fileInput hidden (change)="handleFileUpload($event)" />
           </div>
         </div>
-      </div>
-    </div>
-  </main>
+    </main>
   </div>
 
   <!-- Add Module Modal -->
@@ -256,7 +378,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="moduleTitle">Module Title *</label>
-              <input type="text" id="moduleTitle" name="moduleTitle" [(ngModel)]="newModule.title" required class="form-control" placeholder="Enter module title">
+              <input type="text" id="moduleTitle" name="moduleTitle" [(ngModel)]="newModule.title" required
+                class="form-control" placeholder="Enter module title">
             </div>
           </div>
 
@@ -264,7 +387,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="moduleDescription">Description</label>
-              <textarea id="moduleDescription" name="moduleDescription" [(ngModel)]="newModule.description" class="form-control" rows="4" placeholder="Enter module description"></textarea>
+              <textarea id="moduleDescription" name="moduleDescription" [(ngModel)]="newModule.description"
+                class="form-control" rows="4" placeholder="Enter module description"></textarea>
             </div>
           </div>
 
@@ -272,7 +396,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="moduleOrder">Order Number *</label>
-              <input type="number" id="moduleOrder" name="moduleOrder" [(ngModel)]="newModule.orderNumber" required class="form-control" placeholder="Enter order number">
+              <input type="number" id="moduleOrder" name="moduleOrder" [(ngModel)]="newModule.orderNumber" required
+                class="form-control" placeholder="Enter order number">
             </div>
           </div>
 
@@ -311,7 +436,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editModuleTitle">Module Title *</label>
-              <input type="text" id="editModuleTitle" name="editModuleTitle" [(ngModel)]="newModule.title" required class="form-control" placeholder="Enter module title">
+              <input type="text" id="editModuleTitle" name="editModuleTitle" [(ngModel)]="newModule.title" required
+                class="form-control" placeholder="Enter module title">
             </div>
           </div>
 
@@ -319,7 +445,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editModuleDescription">Description</label>
-              <textarea id="editModuleDescription" name="editModuleDescription" [(ngModel)]="newModule.description" class="form-control" rows="4" placeholder="Enter module description"></textarea>
+              <textarea id="editModuleDescription" name="editModuleDescription" [(ngModel)]="newModule.description"
+                class="form-control" rows="4" placeholder="Enter module description"></textarea>
             </div>
           </div>
 
@@ -327,7 +454,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editModuleOrder">Order Number *</label>
-              <input type="number" id="editModuleOrder" name="editModuleOrder" [(ngModel)]="newModule.orderNumber" required class="form-control" placeholder="Enter order number">
+              <input type="number" id="editModuleOrder" name="editModuleOrder" [(ngModel)]="newModule.orderNumber"
+                required class="form-control" placeholder="Enter order number">
             </div>
           </div>
 
@@ -366,9 +494,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="contentTitle">Content Title *</label>
-              <input type="text" id="contentTitle" name="contentTitle" 
-                     [(ngModel)]="newContent.title" required class="form-control" 
-                     placeholder="Enter content title">
+              <input type="text" id="contentTitle" name="contentTitle" [(ngModel)]="newContent.title" required
+                class="form-control" placeholder="Enter content title">
             </div>
           </div>
 
@@ -376,8 +503,8 @@
           <div class="form-full-width" *ngIf="showModuleSelector">
             <div class="form-group">
               <label for="moduleSelection">Select Module *</label>
-              <select id="moduleSelection" name="moduleSelection" 
-                      [(ngModel)]="selectedModuleId" required class="form-control">
+              <select id="moduleSelection" name="moduleSelection" [(ngModel)]="selectedModuleId" required
+                class="form-control">
                 <option [ngValue]="null" disabled>Choose a module...</option>
                 <option *ngFor="let module of modules" [ngValue]="module.moduleId">
                   {{module.title}}
@@ -393,8 +520,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="contentType">Content Type *</label>
-              <select id="contentType" name="contentType" 
-                      [(ngModel)]="newContent.contentType" required class="form-control">
+              <select id="contentType" name="contentType" [(ngModel)]="newContent.contentType" required
+                class="form-control">
                 <option value="document">Document</option>
                 <option value="link">Link</option>
               </select>
@@ -405,17 +532,16 @@
           <div class="form-full-width" *ngIf="newContent.contentType === 'document'">
             <div class="form-group">
               <label for="contentFile">Upload File</label>
-              
+
               <!-- Show file input only if no file is selected from upload area -->
               <div *ngIf="!contentFile">
-                <input type="file" id="contentFile" name="contentFile" 
-                       (change)="onContentFileSelected($event)" class="form-control"
-                       accept=".pdf,.doc,.docx,.ppt,.pptx">
+                <input type="file" id="contentFile" name="contentFile" (change)="onContentFileSelected($event)"
+                  class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx">
                 <small class="form-text text-muted">
                   Select a document file (PDF, DOC, PPT)
                 </small>
               </div>
-              
+
               <!-- Show selected file info when file is already chosen -->
               <div *ngIf="contentFile" class="selected-file-info">
                 <div class="file-success-header">
@@ -439,9 +565,8 @@
           <div class="form-full-width" *ngIf="newContent.contentType === 'link'">
             <div class="form-group">
               <label for="contentUrl">URL *</label>
-              <input type="url" id="contentUrl" name="contentUrl" 
-                     [(ngModel)]="newContent.contentUrl" class="form-control"
-                     placeholder="https://example.com" required>
+              <input type="url" id="contentUrl" name="contentUrl" [(ngModel)]="newContent.contentUrl"
+                class="form-control" placeholder="https://example.com" required>
               <small class="form-text text-muted">
                 Enter the URL for the external link
               </small>
@@ -452,9 +577,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="contentDescription">Description</label>
-              <textarea id="contentDescription" name="contentDescription" 
-                        [(ngModel)]="newContent.description" class="form-control" 
-                        rows="4" placeholder="Enter content description"></textarea>
+              <textarea id="contentDescription" name="contentDescription" [(ngModel)]="newContent.description"
+                class="form-control" rows="4" placeholder="Enter content description"></textarea>
             </div>
           </div>
 
@@ -462,9 +586,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="contentOrder">Order Number *</label>
-              <input type="number" id="contentOrder" name="contentOrder" 
-                     [(ngModel)]="newContent.orderNumber" required class="form-control" 
-                     placeholder="Enter order number" min="1">
+              <input type="number" id="contentOrder" name="contentOrder" [(ngModel)]="newContent.orderNumber" required
+                class="form-control" placeholder="Enter order number" min="1">
             </div>
           </div>
 
@@ -472,8 +595,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label class="checkbox-label">
-                <input type="checkbox" id="contentPublished" name="contentPublished" 
-                       [(ngModel)]="newContent.isPublished">
+                <input type="checkbox" id="contentPublished" name="contentPublished"
+                  [(ngModel)]="newContent.isPublished">
                 <span class="checkbox-text">Published</span>
               </label>
             </div>
@@ -481,8 +604,8 @@
 
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" (click)="closeAddContentModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" 
-                    [disabled]="!contentForm.form.valid || (showModuleSelector && !selectedModuleId)">Add Content</button>
+            <button type="submit" class="btn btn-primary"
+              [disabled]="!contentForm.form.valid || (showModuleSelector && !selectedModuleId)">Add Content</button>
           </div>
         </form>
       </div>
@@ -504,9 +627,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editContentTitle">Content Title *</label>
-              <input type="text" id="editContentTitle" name="editContentTitle" 
-                     [(ngModel)]="newContent.title" required class="form-control" 
-                     placeholder="Enter content title">
+              <input type="text" id="editContentTitle" name="editContentTitle" [(ngModel)]="newContent.title" required
+                class="form-control" placeholder="Enter content title">
             </div>
           </div>
 
@@ -514,8 +636,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editContentType">Content Type *</label>
-              <select id="editContentType" name="editContentType" 
-                      [(ngModel)]="newContent.contentType" required class="form-control">
+              <select id="editContentType" name="editContentType" [(ngModel)]="newContent.contentType" required
+                class="form-control">
                 <option value="document">Document</option>
                 <option value="link">Link</option>
               </select>
@@ -526,17 +648,16 @@
           <div class="form-full-width" *ngIf="newContent.contentType === 'document'">
             <div class="form-group">
               <label for="editContentFile">Upload File</label>
-              
+
               <!-- Show file input only if no new file is selected -->
               <div *ngIf="!selectedFile">
-                <input type="file" id="editContentFile" name="editContentFile" 
-                       (change)="onContentFileSelected($event)" class="form-control"
-                       accept=".pdf,.doc,.docx,.ppt,.pptx">
+                <input type="file" id="editContentFile" name="editContentFile" (change)="onContentFileSelected($event)"
+                  class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx">
                 <small class="form-text text-muted">
                   Select a document file (PDF, DOC, PPT) - Leave empty to keep current file
                 </small>
               </div>
-              
+
               <!-- Show selected file info when new file is chosen -->
               <div *ngIf="selectedFile" class="selected-file-info">
                 <div class="file-success-header">
@@ -560,9 +681,8 @@
           <div class="form-full-width" *ngIf="newContent.contentType === 'link'">
             <div class="form-group">
               <label for="editContentUrl">URL *</label>
-              <input type="url" id="editContentUrl" name="editContentUrl" 
-                     [(ngModel)]="newContent.contentUrl" class="form-control"
-                     placeholder="https://example.com" required>
+              <input type="url" id="editContentUrl" name="editContentUrl" [(ngModel)]="newContent.contentUrl"
+                class="form-control" placeholder="https://example.com" required>
               <small class="form-text text-muted">
                 Enter the URL for the external link
               </small>
@@ -573,9 +693,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editContentDescription">Description</label>
-              <textarea id="editContentDescription" name="editContentDescription" 
-                        [(ngModel)]="newContent.description" class="form-control" 
-                        rows="4" placeholder="Enter content description"></textarea>
+              <textarea id="editContentDescription" name="editContentDescription" [(ngModel)]="newContent.description"
+                class="form-control" rows="4" placeholder="Enter content description"></textarea>
             </div>
           </div>
 
@@ -583,9 +702,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label for="editContentOrder">Order Number *</label>
-              <input type="number" id="editContentOrder" name="editContentOrder" 
-                     [(ngModel)]="newContent.orderNumber" required class="form-control" 
-                     placeholder="Enter order number" min="1">
+              <input type="number" id="editContentOrder" name="editContentOrder" [(ngModel)]="newContent.orderNumber"
+                required class="form-control" placeholder="Enter order number" min="1">
             </div>
           </div>
 
@@ -593,8 +711,8 @@
           <div class="form-full-width">
             <div class="form-group">
               <label class="checkbox-label">
-                <input type="checkbox" id="editContentPublished" name="editContentPublished" 
-                       [(ngModel)]="newContent.isPublished">
+                <input type="checkbox" id="editContentPublished" name="editContentPublished"
+                  [(ngModel)]="newContent.isPublished">
                 <span class="checkbox-text">Published</span>
               </label>
             </div>
@@ -602,7 +720,8 @@
 
           <div class="form-actions">
             <button type="button" class="btn btn-secondary" (click)="closeEditContentModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" [disabled]="!editContentForm.form.valid">Update Content</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!editContentForm.form.valid">Update
+              Content</button>
           </div>
         </form>
       </div>

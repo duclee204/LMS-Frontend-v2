@@ -1732,7 +1732,7 @@ select.form-control {
   .dropdown-toggle {
     cursor: pointer;
     font-size: 14px;
-    color: #6b7280;
+    color: #333333;
     padding: 4px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
@@ -2075,6 +2075,71 @@ input[type="file"]:hover {
   font-size: 16px;
 }
 
+/* Video and Quiz Management Styles */
+.video-management, .quiz-management {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-toggle {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+      background-color: #f3f4f6;
+    }
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 120px;
+    overflow: hidden;
+  }
+  
+  .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s ease;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &:hover {
+      background-color: #f9fafb;
+    }
+    
+    &:contains("Xuất bản") {
+      color: #059669;
+    }
+    
+    &:contains("Hủy xuất bản") {
+      color: #dc2626;
+    }
+    
+    &:contains("Xóa") {
+      color: #dc2626;
+    }
+  }
+}
+
 /* Responsive modal */
 @media (max-width: 768px) {
   .modal-content {
@@ -2124,5 +2189,372 @@ input[type="file"]:hover {
     font-size: 13px;
   }
 
+  /* Video management actions */
+  .video-management-actions {
+    margin-top: 15px;
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      
+      &.btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        
+        &:hover {
+          background: linear-gradient(135deg, #0056b3, #003d82);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+        
+        &:active {
+          transform: translateY(0);
+        }
+      }
+      
+      i {
+        font-size: 16px;
+      }
+    }
+  }
+
   /* Remove form row responsive since we're not using form-row anymore */
+}
+
+/* Progress Indicators Styling */
+.progress-indicators {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.progress-icon {
+  font-size: 16px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  
+  &.completed {
+    color: #10b981; // Green for completed
+    animation: pulseSuccess 0.5s ease-in-out;
+  }
+  
+  &.in-progress {
+    color: #3b82f6; // Blue for in progress
+    animation: pulse 2s infinite;
+  }
+  
+  &.not-started {
+    color: #9ca3af; // Gray for not started
+  }
+  
+  &.available {
+    color: #f59e0b; // Orange/amber for available
+  }
+}
+
+// Progress percentage display
+.progress-percentage {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-left: 4px;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  min-width: 35px;
+  text-align: center;
+  
+  &.high-progress {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  &.medium-progress {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  &.low-progress {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+// Module completion styling
+.module-completion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  
+  .completion-icon {
+    font-size: 14px;
+    
+    &.completed {
+      color: #f59e0b; // Gold for trophy
+      animation: bounce 0.6s ease-in-out;
+    }
+  }
+  
+  .completion-text {
+    color: #374151;
+    
+    &.completed {
+      color: #059669;
+      font-weight: 600;
+    }
+  }
+}
+
+// Content item progress styling enhancements
+.content-item {
+  .progress-indicators {
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+  }
+  
+  &:hover .progress-indicators {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  &.completed {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  &.in-progress {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #93c5fd;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+// Video item progress styling
+.video-item {
+  .progress-indicators {
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+  }
+  
+  &:hover .progress-indicators {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  &.completed {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #86efac;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  &.in-progress {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #93c5fd;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+// Quiz item progress styling
+.quiz-item {
+  .progress-indicators {
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+  }
+  
+  &:hover .progress-indicators {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  &.completed {
+    background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+    border-color: #fcd34d;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .quiz-score {
+      font-size: 11px;
+      font-weight: 600;
+      color: #92400e;
+      background: #fef3c7;
+      padding: 2px 6px;
+      border-radius: 8px;
+      margin-left: 4px;
+    }
+  }
+  
+  &.available {
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    border-color: #fdba74;
+    
+    .progress-indicators {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+// Module header progress styling
+.module-header {
+  .module-completion {
+    margin-left: 8px;
+    padding: 4px 8px;
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+    
+    &.completed {
+      background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+      border-color: #f59e0b;
+      box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+    }
+  }
+}
+
+// Animations
+@keyframes pulseSuccess {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-3px);
+  }
+  75% {
+    transform: translateY(-1px);
+  }
+}
+
+// Responsive progress indicators
+@media (max-width: 768px) {
+  .progress-indicators {
+    gap: 6px;
+  }
+  
+  .progress-icon {
+    font-size: 14px;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .progress-percentage {
+    font-size: 11px;
+    padding: 1px 4px;
+    min-width: 30px;
+  }
+  
+  .module-completion {
+    font-size: 11px;
+    gap: 4px;
+    
+    .completion-icon {
+      font-size: 12px;
+    }
+  }
+  
+  // Always show progress indicators on mobile
+  .content-item .progress-indicators,
+  .video-item .progress-indicators,
+  .quiz-item .progress-indicators {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .progress-icon {
+    &.completed {
+      color: #166534;
+    }
+    
+    &.in-progress {
+      color: #1e40af;
+    }
+    
+    &.not-started {
+      color: #4b5563;
+    }
+    
+    &.available {
+      color: #b45309;
+    }
+  }
+  
+  .progress-percentage {
+    border: 1px solid #d1d5db;
+    
+    &.high-progress {
+      border-color: #065f46;
+    }
+    
+    &.medium-progress {
+      border-color: #92400e;
+    }
+    
+    &.low-progress {
+      border-color: #991b1b;
+    }
+  }
 }

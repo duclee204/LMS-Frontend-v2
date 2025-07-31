@@ -1,9 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { ExamService } from '../../../services/exam.service';
+import { CourseService } from '../../../services/course.service';
 import { NotificationService } from '../../../services/notification.service';
 import { NotificationComponent } from '../../../components/notification/notification.component';
+import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
+import { ProfileComponent } from '../../../components/profile/profile.component';
+import { UserService } from '../../../services/user.service';
+import { SessionService } from '../../../services/session.service';
 
 interface StudentGrade {
   attemptId: number;
@@ -34,7 +40,7 @@ interface EssaySubmission {
 @Component({
   selector: 'app-student-grades',
   standalone: true,
-  imports: [CommonModule, NotificationComponent],
+  imports: [CommonModule, NotificationComponent, SidebarWrapperComponent, ProfileComponent],
   templateUrl: './student-grades.component.html',
   styleUrl: './student-grades.component.scss'
 })
@@ -44,6 +50,17 @@ export class StudentGradesComponent implements OnInit {
   isLoading = true;
   activeTab = 'ALL'; // ALL, MULTIPLE_CHOICE, ESSAY
   
+  // Navigation state
+  currentPage: string = 'Grades';
+  leftMenuHidden: boolean = false;
+  courseId: number | null = null;
+  courseInfo: any = null;
+  
+  // Profile component properties
+  username: string = '';
+  userRole: string = '';
+  avatarUrl: string = '';
+  
   // For essay submission modal
   selectedSubmission?: EssaySubmission;
   isLoadingSubmission = false;
@@ -51,8 +68,107 @@ export class StudentGradesComponent implements OnInit {
   constructor(
     private apiService: ApiService,
     private examService: ExamService,
-    private notificationService: NotificationService
+    private courseService: CourseService,
+    private notificationService: NotificationService,
+    private userService: UserService,
+    private sessionService: SessionService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
+
+  ngOnInit(): void {
+    this.initializeUserProfile();
+    // Get courseId from route params
+    this.route.queryParams.subscribe(params => {
+      this.courseId = params['courseId'] ? +params['courseId'] : null;
+      console.log('📚 Course ID from route:', this.courseId);
+      
+      // Load course info if courseId exists
+      if (this.courseId) {
+        this.loadCourseInfo();
+      }
+    });
+    this.loadGrades();
+  }
+
+  // Initialize user profile
+  initializeUserProfile(): void {
+    const userInfo = this.userService.getCurrentUserInfo();
+    this.username = userInfo.username;
+    this.userRole = userInfo.role;
+    this.avatarUrl = userInfo.avatarUrl;
+  }
+
+  // Format role để hiển thị (chữ cái đầu viết hoa)
+  getDisplayRole(role: string): string {
+    const cleanRole = role.replace('ROLE_', '').toLowerCase();
+    return cleanRole.charAt(0).toUpperCase() + cleanRole.slice(1);
+  }
+
+  onProfileUpdate(): void {
+    this.initializeUserProfile();
+  }
+
+  onLogout(): void {
+    this.sessionService.logout();
+  }
+
+  // Navigation methods
+  toggleLeftMenu(): void {
+    this.leftMenuHidden = !this.leftMenuHidden;
+  }
+
+  navigateToHome(): void {
+    if (this.courseId) {
+      this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToDiscussion(): void {
+    if (this.courseId) {
+      this.router.navigate(['/discussion'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToGrades(): void {
+    if (this.courseId) {
+      this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToModules(): void {
+    if (this.courseId) {
+      this.router.navigate(['/module'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToVideo(): void {
+    if (this.courseId) {
+      // Students should go to learn-online (this component is for students)
+      this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  navigateToTests(): void {
+    if (this.courseId) {
+      this.router.navigate(['/exam'], { queryParams: { courseId: this.courseId } });
+    }
+  }
+
+  // Load course information
+  loadCourseInfo(): void {
+    if (!this.courseId) return;
+
+    this.courseService.getCourseById(this.courseId).subscribe({
+      next: (course) => {
+        this.courseInfo = course;
+        console.log('✅ Course info loaded:', course);
+      },
+      error: (error) => {
+        console.error('❌ Error loading course info:', error);
+      }
+    });
+  }
 
   // Helper method để hiển thị thông báo
   private showAlert(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') {
@@ -65,11 +181,6 @@ export class StudentGradesComponent implements OnInit {
     } else {
       this.notificationService.info('Thông báo', message);
     }
-  }
-
-  ngOnInit() {
-    console.log('🔍 Student grades component initialized');
-    this.loadGrades();
   }
 
   // Get correct answers count from score

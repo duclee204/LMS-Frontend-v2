@@ -1,0 +1,369 @@
+<app-notification></app-notification>
+<div class="layout-row">
+  <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+    <app-sidebar-wrapper></app-sidebar-wrapper>
+  </aside>
+  
+  <div class="main-content">
+    <!-- Profile component -->
+    <div class="profile-header">
+      <app-profile 
+        [username]="username"
+        [role]="getDisplayRole(userRole)"
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <main>
+      <div class="breadcrumb">
+        <button (click)="toggleLeftMenu()" aria-label="Toggle left menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <nav class="breadcrumb-nav">
+          <span class="breadcrumb-item course-name">
+            {{ courseInfo?.title || (courseId ? ('Course ' + courseId) : 'Course Home') }}
+          </span>
+          <span class="breadcrumb-separator">></span>
+          <span class="breadcrumb-item current-page">Home</span>
+        </nav>
+      </div>
+
+      <div class="content-wrapper" [ngClass]="{ 'menu-hidden': leftMenuHidden }">
+        <div class="left-menu" [ngClass]="{ hide: leftMenuHidden, show: !leftMenuHidden }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Home' }">
+            <a href="#" (click)="navigateToHome(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Home' }">
+              <span *ngIf="currentPage === 'Home'" class="active-indicator">|</span>
+              <span class="menu-text">Home</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Discussion' }">
+            <a href="#" (click)="navigateToDiscussion(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Discussion' }">
+              <span *ngIf="currentPage === 'Discussion'" class="active-indicator">|</span>
+              <span class="menu-text">Discussion</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Grades' }">
+            <a href="#" (click)="navigateToGrades(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Grades' }">
+              <span *ngIf="currentPage === 'Grades'" class="active-indicator">|</span>
+              <span class="menu-text">Grades</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Modules' }">
+            <a href="#" (click)="navigateToModules(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Modules' }">
+              <span *ngIf="currentPage === 'Modules'" class="active-indicator">|</span>
+              <span class="menu-text">Modules</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+            <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Video' }">
+              <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
+              <span class="menu-text">Video</span>
+            </a>
+          </div>
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Tests' }">
+            <a href="#" (click)="navigateToTests(); $event.preventDefault()"
+              [ngClass]="{ 'active-link': currentPage === 'Tests' }">
+              <span *ngIf="currentPage === 'Tests'" class="active-indicator">|</span>
+              <span class="menu-text">Tests</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="right-content">
+          <div class="course-content">
+            <div class="course-home-container">
+              <!-- Header section -->
+              <div class="header-section">
+                <h1>
+                  <i class="fas fa-home"></i>
+                  {{ courseInfo?.title || 'Course Home' }}
+                </h1>
+                <p *ngIf="courseInfo?.description" class="course-description">
+                  {{ courseInfo.description }}
+                </p>
+              </div>
+
+              <!-- Course overview stats -->
+              <div class="stats-section" *ngIf="!loading">
+                <!-- Stats for Students -->
+                <ng-container *ngIf="isStudent()">
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ modules.length }}</h3>
+                      <p>Modules</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>0</h3>
+                      <p>Completed</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ modules.length - 0 }}</h3>
+                      <p>Remaining</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ modules.length > 0 ? (0 / modules.length * 100).toFixed(0) : 0 }}%</h3>
+                      <p>Progress</p>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Stats for Instructors -->
+                <ng-container *ngIf="isInstructor()">
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ students.length }}</h3>
+                      <p>Students</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ modules.length }}</h3>
+                      <p>Modules</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>0</h3>
+                      <p>Active Students</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>0%</h3>
+                      <p>Avg Progress</p>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Stats for Admins -->
+                <ng-container *ngIf="isAdmin()">
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ instructors.length }}</h3>
+                      <p>Instructors</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ students.length }}</h3>
+                      <p>Students</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ courseUsers.length }}</h3>
+                      <p>Total Users</p>
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-icon">
+                      <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-info">
+                      <h3>{{ modules.length }}</h3>
+                      <p>Modules</p>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+
+              <!-- Search and filters -->
+              <div class="search-section">
+                <div class="search-container">
+                  <div class="search-input-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input
+                      type="text"
+                      [(ngModel)]="searchTerm"
+                      (input)="onSearch()"
+                      [placeholder]="isStudent() ? 'Tìm kiếm module...' : 'Tìm kiếm người dùng...'"
+                      class="search-input">
+                    <button
+                      *ngIf="searchTerm"
+                      (click)="clearSearch()"
+                      class="clear-search"
+                      type="button">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Loading state -->
+              <div *ngIf="loading" class="loading-container">
+                <div class="spinner"></div>
+                <p>{{ isStudent() ? 'Đang tải modules...' : 'Đang tải danh sách người dùng...' }}</p>
+              </div>
+
+              <!-- Modules grid - Only for Students -->
+              <div *ngIf="!loading && isStudent()" class="modules-section">
+                <div *ngIf="filteredModules.length === 0 && !searchTerm" class="no-data">
+                  <i class="fas fa-book-open"></i>
+                  <h3>Chưa có module nào</h3>
+                  <p>Khóa học này chưa có module. Hãy liên hệ giảng viên để biết thêm thông tin.</p>
+                </div>
+
+                <div *ngIf="filteredModules.length === 0 && searchTerm" class="no-data">
+                  <i class="fas fa-search"></i>
+                  <h3>Không tìm thấy module</h3>
+                  <p>Không có module nào phù hợp với từ khóa "{{ searchTerm }}"</p>
+                  <button (click)="clearSearch()" class="btn btn-primary">
+                    <i class="fas fa-times"></i>
+                    Xóa bộ lọc
+                  </button>
+                </div>
+
+                <div *ngIf="filteredModules.length > 0" class="modules-grid">
+                  <div
+                    *ngFor="let module of filteredModules"
+                    class="module-card"
+                    (click)="viewModule(module)">
+                    
+                    <div class="module-header">
+                      <div class="module-number">{{ module.orderNumber }}</div>
+                    </div>
+
+                    <div class="module-content">
+                      <h3 class="module-title">{{ module.title }}</h3>
+                      <p *ngIf="module.description" class="module-description">
+                        {{ module.description }}
+                      </p>
+
+                      <div class="module-meta">
+                        <div class="meta-item">
+                          <i class="fas fa-sort-numeric-up"></i>
+                          <span>Module {{ module.orderNumber }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Progress bar -->
+                      <div class="progress-section">
+                        <div class="progress-info">
+                          <span class="progress-label">Tiến độ</span>
+                          <span class="progress-percentage">{{ getModuleProgress(module) }}%</span>
+                        </div>
+                        <div class="progress-bar">
+                          <div
+                            class="progress-fill"
+                            [style.width.%]="getModuleProgress(module)">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="module-actions">
+                      <button class="btn btn-primary btn-block">
+                        <i class="fas fa-play"></i>
+                        Bắt đầu học
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Users list - For Admin and Instructors -->
+              <div *ngIf="!loading && !isStudent()" class="users-section">
+                <div *ngIf="filteredUsers.length === 0 && !searchTerm" class="no-data">
+                  <i class="fas fa-users"></i>
+                  <h3>Chưa có người dùng nào</h3>
+                  <p>{{ isAdmin() ? 'Khóa học này chưa có giảng viên hoặc sinh viên nào.' : 'Chưa có sinh viên nào trong khóa học này.' }}</p>
+                </div>
+
+                <div *ngIf="filteredUsers.length === 0 && searchTerm" class="no-data">
+                  <i class="fas fa-search"></i>
+                  <h3>Không tìm thấy người dùng</h3>
+                  <p>Không có người dùng nào phù hợp với từ khóa "{{ searchTerm }}"</p>
+                  <button (click)="clearSearch()" class="btn btn-primary">
+                    <i class="fas fa-times"></i>
+                    Xóa bộ lọc
+                  </button>
+                </div>
+
+                <div *ngIf="filteredUsers.length > 0" class="users-grid">
+                  <div
+                    *ngFor="let user of filteredUsers"
+                    class="user-card">
+                    
+                    <div class="user-avatar">
+                      <img [src]="user.avatarUrl || '/assets/pictures/default-avatar.png'" [alt]="user.fullName" />
+                    </div>
+
+                    <div class="user-content">
+                      <h3 class="user-name">{{ user.fullName }}</h3>
+                      <p class="user-username">{{ '@' + user.username }}</p>
+                      <p class="user-email">{{ user.email }}</p>
+                      
+                      <div class="user-meta">
+                        <span class="user-role-badge" [ngClass]="'role-' + user.role?.toLowerCase()">
+                          {{ user.role === 'ADMIN' ? 'Quản trị viên' : 
+                             user.role === 'INSTRUCTOR' ? 'Giảng viên' : 'Sinh viên' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="user-actions">
+                      <button class="btn btn-secondary" (click)="viewUserProfile(user.id)">
+                        <i class="fas fa-user"></i>
+                        Xem hồ sơ
+                      </button>
+                      <button *ngIf="isAdmin()" class="btn btn-danger" (click)="removeUserFromCourse(user.id)">
+                        <i class="fas fa-user-times"></i>
+                        Xóa khỏi khóa học
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

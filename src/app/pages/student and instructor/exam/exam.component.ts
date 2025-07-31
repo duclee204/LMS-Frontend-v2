@@ -173,30 +173,37 @@ export class ExamComponent {
   // Process exams data based on user role
   private processExamsData(data: any[], isForStudent: boolean): void {
     console.log('Processing exams data:', data);
+    console.log('Raw backend response for first exam:', JSON.stringify(data[0], null, 2));
     
-    this.exams = data.map((e: any) => ({
-      quizId: e.quizId,
-      courseId: e.courseId,
-      title: e.title,
-      description: e.description,
-      quizType: e.quizType,
-      timeLimit: e.timeLimit,
-      shuffleAnswers: e.shuffleAnswers,
-      allowMultipleAttempts: e.allowMultipleAttempts,
-      showQuizResponses: e.showQuizResponses,
-      showOneQuestionAtATime: e.showOneQuestionAtATime,
-      dueDate: e.dueDate,
-      availableFrom: e.availableFrom,
-      availableUntil: e.availableUntil,
-      publish: e.publish,
-      expanded: false,
-      questions: [],
-      // Initialize completion status
-      isCompleted: false,
-      completionDate: undefined,
-      score: undefined,
-      attempts: 0
-    }));
+    this.exams = data.map((e: any) => {
+      console.log(`Mapping exam "${e.title}" - published field:`, e.published, ', publish field:', e.publish);
+      
+      return {
+        quizId: e.quizId,
+        courseId: e.courseId,
+        title: e.title,
+        description: e.description,
+        quizType: e.quizType,
+        timeLimit: e.timeLimit,
+        shuffleAnswers: e.shuffleAnswers,
+        allowMultipleAttempts: e.allowMultipleAttempts,
+        showQuizResponses: e.showQuizResponses,
+        showOneQuestionAtATime: e.showOneQuestionAtATime,
+        dueDate: e.dueDate,
+        availableFrom: e.availableFrom,
+        availableUntil: e.availableUntil,
+        publish: e.published !== undefined ? e.published : e.publish, // Try published first, fallback to publish
+        expanded: false,
+        questions: [],
+        // Initialize completion status
+        isCompleted: false,
+        completionDate: undefined,
+        score: undefined,
+        attempts: 0
+      };
+    });
+
+    console.log('Mapped exams with publish status:', this.exams.map(e => ({title: e.title, publish: e.publish})));
 
     // Filter exams for students - only show published exams
     if (isForStudent) {
@@ -407,6 +414,19 @@ export class ExamComponent {
     if (!this.canManageContent()) return;
 
     const newStatus = !exam.publish;
+    const statusText = newStatus ? 'đã xuất bản' : 'đã chuyển về bản nháp';
+
+    // Show confirmation dialog
+    const confirmMessage = newStatus 
+      ? `Bạn có chắc chắn muốn xuất bản bài thi "${exam.title}"?`
+      : `Bạn có chắc chắn muốn chuyển bài thi "${exam.title}" về bản nháp?`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Store original status for rollback
+    const originalStatus = exam.publish;
     
     // Update the exam object immediately for UI feedback
     exam.publish = newStatus;
@@ -416,14 +436,17 @@ export class ExamComponent {
       this.examService.updateQuizStatus(exam.quizId, newStatus).subscribe({
         next: () => {
           console.log(`✅ Exam ${exam.title} ${newStatus ? 'published' : 'unpublished'} successfully`);
+          
           // Show success message
-          const statusText = newStatus ? 'đã xuất bản' : 'đã chuyển về bản nháp';
           alert(`Bài thi "${exam.title}" ${statusText} thành công!`);
+          
+          // Reload exams to ensure UI consistency with database
+          this.loadExams();
         },
         error: (error: any) => {
           console.error('❌ Error updating exam status:', error);
           // Revert the status on error
-          exam.publish = !newStatus;
+          exam.publish = originalStatus;
           alert('Có lỗi xảy ra khi cập nhật trạng thái bài thi!');
         }
       });
@@ -505,29 +528,55 @@ export class ExamComponent {
     }
   }
 
-  // Navigation methods - Simple page switching within the same component
+  // Navigation methods - Actual routing between pages
   navigateToHome(): void {
     console.log('navigateToHome called');
-    this.currentPage = 'Home';
+    if (this.courseId) {
+      this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    } else {
+      this.router.navigate(['/course-home']);
+    }
   }
 
   navigateToDiscussion(): void {
     console.log('navigateToDiscussion called');
-    this.currentPage = 'Discussion';
+    if (this.courseId) {
+      this.router.navigate(['/discussion'], { queryParams: { courseId: this.courseId } });
+    }
   }
 
   navigateToGrades(): void {
     console.log('navigateToGrades called');
-    this.currentPage = 'Grades';
+    if (this.courseId) {
+      // Check if user is instructor/admin
+      if (this.canManageContent()) {
+        // Navigate to instructor grades management page
+        this.router.navigate(['/grades'], { queryParams: { courseId: this.courseId } });
+      } else {
+        // Navigate to student grades view page
+        this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
+      }
+    }
+  }
+
+  navigateToVideo(): void {
+    console.log('navigateToVideo called');
+    if (this.courseId) {
+      // Check if user is instructor/admin
+      if (this.canManageContent()) {
+        // Navigate to video upload page for instructors
+        this.router.navigate(['/video-upload'], { queryParams: { courseId: this.courseId } });
+      } else {
+        // Navigate to learn online page for students
+        this.router.navigate(['/learn-online'], { queryParams: { courseId: this.courseId } });
+      }
+    }
   }
 
   navigateToTests(): void {
     console.log('navigateToTests called');
-    this.currentPage = 'Tests';
-    // Load exams if not already loaded
-    if (this.courseId && (!this.exams || this.exams.length === 0)) {
-      console.log('Loading exams...');
-      this.loadExams();
+    if (this.courseId) {
+      this.router.navigate(['/exam'], { queryParams: { courseId: this.courseId } });
     }
   }
 
@@ -555,19 +604,12 @@ export class ExamComponent {
     
     console.log('🔄 Navigating to modules...');
     
-    if (this.courseId && this.courseInfo) {
-      this.router.navigate(['/module'], { 
-        queryParams: { 
-          courseId: this.courseId,
-          courseName: encodeURIComponent(this.courseInfo.title),
-          page: 'Modules'
-        } 
-      });
+    if (this.courseId) {
+      this.router.navigate(['/module'], { queryParams: { courseId: this.courseId } });
     } else {
-      console.error('❌ Cannot navigate to modules: missing courseId or courseInfo');
+      console.error('❌ Cannot navigate to modules: missing courseId');
     }
   }
-
 
   navigateToAnnouncements(event?: Event): void {
     if (event) {

@@ -44,8 +44,11 @@ export class ApiService {
   }
 
   // Video-specific methods
-  getVideosByCourse(courseId: number): Observable<any[]> {
-    return this.get<any[]>(`/videos/course/${courseId}`);
+  getVideosByCourse(courseId: number, publishedOnly: boolean = false): Observable<any[]> {
+    const url = publishedOnly 
+      ? `/videos/course/${courseId}?published=true`
+      : `/videos/course/${courseId}`;
+    return this.get<any[]>(url);
   }
 
   streamVideo(videoId: number): Observable<Blob> {
