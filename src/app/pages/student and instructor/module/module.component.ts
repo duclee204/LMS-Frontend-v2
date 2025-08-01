@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, ViewChild, Inject, PLATFORM_ID, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,15 +12,13 @@ import { ProfileComponent } from '../../../components/profile/profile.component'
 import { SidebarWrapperComponent } from '../../../components/sidebar-wrapper/sidebar-wrapper.component';
 import { NotificationComponent } from '../../../components/notification/notification.component';
 import { GradesComponent } from '../../admin/grades/grades.component';
-import { StudentGradesComponent } from '../student-grades/student-grades.component';
 
 @Component({
   selector: 'app-module',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ProfileComponent, SidebarWrapperComponent, NotificationComponent, GradesComponent, StudentGradesComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ProfileComponent, SidebarWrapperComponent, NotificationComponent, GradesComponent],
   templateUrl: './module.component.html',
-  styleUrls: ['./module.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default
+  styleUrls: ['./module.component.scss']
 })
 export class ModuleComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
@@ -241,6 +239,16 @@ export class ModuleComponent {
       }
     });
     
+    // For students, ensure all modules have completion status calculated
+    if (isForStudent) {
+      this.modules.forEach(module => {
+        // Give a small delay to ensure contents are loaded first
+        setTimeout(() => {
+          this.updateModuleLevelCompletion(module);
+        }, 100);
+      });
+    }
+    
     console.log('Final processed modules with progress:', this.modules);
   }
 
@@ -384,7 +392,7 @@ export class ModuleComponent {
     // Load videos, quizzes, and progress for all users
     this.loadModuleVideos(module);
     this.loadModuleQuizzes(module);
-    this.loadModuleProgress(module);
+    // loadModuleProgress will be called by loadModuleVideos and loadModuleQuizzes
   }
 
   // Process module contents based on user role
@@ -395,6 +403,9 @@ export class ModuleComponent {
     }
     
     module.contents = contents.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+    
+    // Load progress after contents are loaded
+    this.loadModuleProgress(module);
   }
 
   // Fallback method to load contents for students
@@ -411,6 +422,9 @@ export class ModuleComponent {
       error: (err: any) => {
         console.error('❌ Fallback also failed for module contents:', err);
         module.contents = [];
+        
+        // Still load progress even if contents failed
+        this.loadModuleProgress(module);
         
         if (this.sessionService.isStudent()) {
           console.log('Student cannot access module contents - this may be normal for module:', module.title);
@@ -448,6 +462,9 @@ export class ModuleComponent {
           console.log('👨‍🏫 Loading all videos for instructor/admin');
           module.videos = videos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         }
+        
+        // Load progress after videos are loaded
+        this.loadModuleProgress(module);
       },
       error: (err: any) => {
         console.error('❌ Error loading module videos:', err);
@@ -470,14 +487,23 @@ export class ModuleComponent {
               
               console.log('✅ Fallback: Filtered published videos client-side:', publishedVideos);
               module.videos = publishedVideos.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+              
+              // Load progress after videos are loaded (fallback)
+              this.loadModuleProgress(module);
             },
             error: (fallbackErr: any) => {
               console.error('❌ Fallback also failed:', fallbackErr);
               module.videos = [];
+              
+              // Load progress even if videos failed
+              this.loadModuleProgress(module);
             }
           });
         } else {
           module.videos = [];
+          
+          // Load progress even if videos failed  
+          this.loadModuleProgress(module);
         }
       }
     });
@@ -511,6 +537,9 @@ export class ModuleComponent {
           console.log('👨‍🏫 Loading all quizzes for instructor/admin');
           module.quizzes = quizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
         }
+        
+        // Load progress after quizzes are loaded
+        this.loadModuleProgress(module);
       },
       error: (err: any) => {
         console.error('❌ Error loading module quizzes:', err);
@@ -533,14 +562,23 @@ export class ModuleComponent {
               
               console.log('✅ Fallback: Filtered published quizzes client-side:', publishedQuizzes);
               module.quizzes = publishedQuizzes.sort((a, b) => (a.orderNumber || 0) - (b.orderNumber || 0));
+              
+              // Load progress after quizzes are loaded (fallback)
+              this.loadModuleProgress(module);
             },
             error: (fallbackErr: any) => {
               console.error('❌ Fallback also failed:', fallbackErr);
               module.quizzes = [];
+              
+              // Load progress even if quizzes failed
+              this.loadModuleProgress(module);
             }
           });
         } else {
           module.quizzes = [];
+          
+          // Load progress even if quizzes failed
+          this.loadModuleProgress(module);
         }
       }
     });
@@ -555,6 +593,14 @@ export class ModuleComponent {
     if (!this.sessionService.isStudent()) {
       return;
     }
+
+    console.log(`🔄 Loading progress for module: ${module.title}`);
+    console.log(`📊 Backend module completion status:`, {
+      contentCompleted: module.contentCompleted,
+      videoCompleted: module.videoCompleted,
+      testCompleted: module.testCompleted,
+      moduleCompleted: module.moduleCompleted
+    });
     
     // Load overall module progress
     this.moduleContentService.getModuleProgress(module.moduleId).subscribe({
@@ -566,50 +612,132 @@ export class ModuleComponent {
       }
     });
 
-    // Load individual content progress using dedicated APIs for detailed status
+    // ✅ Use backend module-level completion status to set individual items
+    // This ensures consistency between backend state and UI display
+
+    // ✅ Use backend module-level completion status to set individual items
+    // This ensures consistency between backend state and UI display
+
+    // Load individual content progress
     if (module.contents && module.contents.length > 0) {
-      module.contents.forEach(content => {
-        if (content.contentId) {
-          this.moduleContentService.getContentProgress(content.contentId).subscribe({
-            next: (progress: any) => {
-              content.isCompleted = progress.viewed || progress.completed || false;
-              content.viewedAt = progress.viewedAt;
-            },
-            error: (err: any) => {
-              content.isCompleted = false;
-            }
-          });
-        }
-      });
+      console.log(`📋 Processing ${module.contents.length} contents in module ${module.title}`);
+      console.log(`📋 Backend contentCompleted status: ${module.contentCompleted}`);
+      
+      // If backend says all content is completed, mark all contents as completed
+      if (module.contentCompleted) {
+        console.log(`✅ Backend says all content completed for module ${module.title}, marking all contents as completed`);
+        module.contents.forEach(content => {
+          content.isCompleted = true;
+          content.viewedAt = new Date().toISOString();
+          console.log(`✅ Set content "${content.title}" as completed`);
+        });
+        // Don't call updateModuleLevelCompletion here - trust backend data!
+      } else {
+        console.log(`⏳ Backend says content not fully completed, loading individual status`);
+        // Load individual content progress for more granular control
+        module.contents.forEach(content => {
+          if (content.contentId) {
+            this.moduleContentService.getContentProgress(content.contentId).subscribe({
+              next: (progress: any) => {
+                console.log(`✅ Individual content progress for ${content.title}:`, progress);
+                content.isCompleted = progress.viewed || progress.completed || false;
+                content.viewedAt = progress.viewedAt;
+                
+                // Only update if we don't have reliable backend module completion data
+                if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
+                  this.updateModuleLevelCompletion(module);
+                }
+              },
+              error: (err: any) => {
+                console.error(`❌ Error loading individual content progress for ${content.title}:`, err);
+                content.isCompleted = false;
+                if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
+                  this.updateModuleLevelCompletion(module);
+                }
+              }
+            });
+          } else {
+            content.isCompleted = false;
+            console.log(`⚠️ Content "${content.title}" has no contentId, marking as not completed`);
+          }
+        });
+      }
+    } else {
+      console.log(`📋 No contents found in module ${module.title}`);
     }
 
-    // Load individual video progress using dedicated APIs for detailed status  
+    // Load individual video progress
     if (module.videos && module.videos.length > 0) {
-      module.videos.forEach(video => {
-        if (video.videoId) {
-          this.moduleContentService.getVideoProgress(video.videoId).subscribe({
-            next: (progress: any) => {
-              video.isCompleted = progress.completed || false;
-              video.watchedPercentage = progress.watchedPercentage || 0;
-            },
-            error: (err: any) => {
-              video.isCompleted = false;
-              video.watchedPercentage = 0;
-            }
-          });
-        }
-      });
+      console.log(`🎥 Processing ${module.videos.length} videos in module ${module.title}`);
+      console.log(`🎥 Backend videoCompleted status: ${module.videoCompleted}`);
+      
+      // If backend says all videos are completed, mark all videos as completed
+      if (module.videoCompleted) {
+        console.log(`✅ Backend says all videos completed for module ${module.title}, marking all videos as completed`);
+        module.videos.forEach(video => {
+          video.isCompleted = true;
+          video.watchedPercentage = 100;
+          console.log(`✅ Set video "${video.title}" as completed`);
+        });
+        // Don't call updateModuleLevelCompletion here - trust backend data!
+      } else {
+        console.log(`⏳ Backend says videos not fully completed, loading individual status`);
+        // Load individual video progress for more granular control
+        module.videos.forEach(video => {
+          if (video.videoId) {
+            this.moduleContentService.getVideoProgress(video.videoId).subscribe({
+              next: (progress: any) => {
+                console.log(`✅ Individual video progress for ${video.title}:`, progress);
+                video.isCompleted = progress.completed || false;
+                video.watchedPercentage = progress.watchedPercentage || 0;
+                
+                // Only update if we don't have reliable backend module completion data
+                if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
+                  this.updateModuleLevelCompletion(module);
+                }
+              },
+              error: (err: any) => {
+                console.error(`❌ Error loading individual video progress for ${video.title}:`, err);
+                video.isCompleted = false;
+                video.watchedPercentage = 0;
+                if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
+                  this.updateModuleLevelCompletion(module);
+                }
+              }
+            });
+          } else {
+            video.isCompleted = false;
+            video.watchedPercentage = 0;
+            console.log(`⚠️ Video "${video.title}" has no videoId, marking as not completed`);
+          }
+        });
+      }
+    } else {
+      console.log(`🎥 No videos found in module ${module.title}`);
     }
 
-    // Load quiz completion status from backend quiz API
+    // Set quiz completion status
     if (module.quizzes && module.quizzes.length > 0) {
+      console.log(`📝 Processing ${module.quizzes.length} quizzes in module ${module.title}`);
+      console.log(`📝 Backend testCompleted status: ${module.testCompleted}`);
+      
       module.quizzes.forEach(quiz => {
-        // For quizzes, check user attempts to determine completion status
         if (quiz.quizId) {
-          // Use module.testCompleted as fallback until individual quiz status API is implemented
+          // Use backend module-level test completion status
           quiz.isCompleted = module.testCompleted || false;
+          console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) isCompleted: ${quiz.isCompleted}`);
         }
       });
+    } else {
+      console.log(`📝 No quizzes found in module ${module.title}`);
+    }
+
+    // Final update of module completion status - but only if we don't have reliable backend data
+    if (module.moduleCompleted === undefined || module.moduleCompleted === null) {
+      console.log(`🔄 Backend moduleCompleted is missing, calculating locally for module ${module.title}`);
+      this.updateModuleLevelCompletion(module);
+    } else {
+      console.log(`✅ Using backend moduleCompleted=${module.moduleCompleted} for module ${module.title} - skipping local calculation`);
     }
   }
 
@@ -629,8 +757,15 @@ export class ModuleComponent {
       next: (response: any) => {
         console.log('✅ Content marked as viewed successfully');
         
-        // Refresh module data from backend instead of local UI updates
-        this.refreshModuleProgress(content.moduleId!);
+        // Update UI immediately
+        content.isCompleted = true;
+        content.viewedAt = new Date().toISOString();
+        
+        // Update module-level completion status
+        const module = this.modules.find(m => m.moduleId === content.moduleId);
+        if (module) {
+          this.updateModuleLevelCompletion(module);
+        }
       },
       error: (err: any) => {
         console.error('❌ Error marking content as viewed:', err);
@@ -648,8 +783,16 @@ export class ModuleComponent {
       next: (response: any) => {
         console.log('✅ Test marked as completed successfully');
         
-        // Refresh module data from backend instead of local UI updates
-        this.refreshModuleProgress(moduleId);
+        // Update UI immediately
+        const module = this.modules.find(m => m.moduleId === moduleId);
+        if (module && module.quizzes) {
+          const quiz = module.quizzes.find(q => q.quizId === quizId);
+          if (quiz) {
+            quiz.isCompleted = true;
+          }
+          // Update module-level completion status
+          this.updateModuleLevelCompletion(module);
+        }
       },
       error: (err: any) => {
         console.error('❌ Error marking test as completed:', err);
@@ -673,16 +816,20 @@ export class ModuleComponent {
             if (moduleIndex !== -1) {
               // Preserve existing contents/videos/quizzes but update progress data
               const existingModule = this.modules[moduleIndex];
+              
+              // ⚠️ Don't override local completion calculations with potentially stale backend data
+              // Only use backend data for percentage if not already calculated locally
               this.modules[moduleIndex] = {
                 ...existingModule,
-                completionPercentage: updatedModule.completionPercentage || 0,
-                contentCompleted: updatedModule.contentCompleted || false,
-                videoCompleted: updatedModule.videoCompleted || false,
-                testCompleted: updatedModule.testCompleted || false,
-                moduleCompleted: updatedModule.moduleCompleted || false
+                completionPercentage: existingModule.completionPercentage || updatedModule.completionPercentage || 0,
+                // Keep local completion flags if they exist, otherwise use backend
+                contentCompleted: existingModule.contentCompleted !== undefined ? existingModule.contentCompleted : (updatedModule.contentCompleted || false),
+                videoCompleted: existingModule.videoCompleted !== undefined ? existingModule.videoCompleted : (updatedModule.videoCompleted || false),
+                testCompleted: existingModule.testCompleted !== undefined ? existingModule.testCompleted : (updatedModule.testCompleted || false),
+                moduleCompleted: existingModule.moduleCompleted !== undefined ? existingModule.moduleCompleted : (updatedModule.moduleCompleted || false)
               };
               
-              // Update individual item statuses based on backend data
+              // Update individual item statuses based on backend data, which will recalculate module completion
               this.loadModuleProgress(this.modules[moduleIndex]);
               
               console.log('✅ Module progress refreshed:', this.modules[moduleIndex]);
@@ -730,14 +877,105 @@ export class ModuleComponent {
 
   // Check if module is completed - use backend data or fallback to percentage calculation
   isModuleCompleted(module: ModuleItem): boolean {
-    // ✅ Use backend completion status if available
+    // ✅ Always trust backend completion status when available
     if (module.moduleCompleted !== undefined && module.moduleCompleted !== null) {
+      console.log(`🎯 Module ${module.title}: Using backend moduleCompleted = ${module.moduleCompleted}`);
       return module.moduleCompleted;
     }
     
-    // ❌ Fallback to percentage calculation
+    // ❌ Fallback to percentage calculation only if backend data is missing
     const percentage = this.getModuleCompletionPercentage(module);
-    return percentage === 100;
+    const isCompleted = percentage === 100;
+    console.log(`🎯 Module ${module.title}: Using percentage fallback = ${percentage}% → ${isCompleted}`);
+    return isCompleted;
+  }
+
+  // ✅ Update module-level completion status based on individual item completion
+  updateModuleLevelCompletion(module: ModuleItem): void {
+    if (!this.sessionService.isStudent()) {
+      return; // Only update for students
+    }
+
+    // ✅ IMPORTANT: Trust backend module-level completion data when available
+    // Only recalculate if backend data is missing or inconsistent
+    const hasBackendCompletion = (
+      module.contentCompleted !== undefined && 
+      module.videoCompleted !== undefined && 
+      module.testCompleted !== undefined &&
+      module.moduleCompleted !== undefined
+    );
+
+    if (hasBackendCompletion) {
+      console.log(`🎯 Using backend completion status for module ${module.title} - NOT recalculating`);
+      console.log(`📊 Backend says: contentCompleted=${module.contentCompleted}, videoCompleted=${module.videoCompleted}, testCompleted=${module.testCompleted}, moduleCompleted=${module.moduleCompleted}`);
+      
+      // Keep backend percentage if available, otherwise calculate
+      if (!module.completionPercentage) {
+        module.completionPercentage = this.getModuleCompletionPercentage(module);
+      }
+      
+      // Trigger change detection but DON'T override backend completion flags
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // ✅ Only calculate locally if backend data is missing
+    console.log(`⚠️ Backend completion data missing for module ${module.title}, calculating locally`);
+
+    // Calculate completion based on individual items
+    let contentCompleted = true;
+    let videoCompleted = true;
+    let testCompleted = true;
+
+    // Check content completion
+    if (module.contents && module.contents.length > 0) {
+      contentCompleted = module.contents.every(content => content.isCompleted);
+    } else {
+      // No contents means content section is "completed" by default
+      contentCompleted = true;
+    }
+
+    // Check video completion
+    if (module.videos && module.videos.length > 0) {
+      videoCompleted = module.videos.every(video => video.isCompleted);
+    } else {
+      // No videos means video section is "completed" by default
+      videoCompleted = true;
+    }
+
+    // Check quiz completion
+    if (module.quizzes && module.quizzes.length > 0) {
+      testCompleted = module.quizzes.every(quiz => quiz.isCompleted);
+    } else {
+      // No quizzes means test section is "completed" by default
+      testCompleted = true;
+    }
+
+    // Update module-level completion flags ONLY if backend data was missing
+    module.contentCompleted = contentCompleted;
+    module.videoCompleted = videoCompleted;
+    module.testCompleted = testCompleted;
+    module.moduleCompleted = contentCompleted && videoCompleted && testCompleted;
+    
+    // Update completion percentage
+    module.completionPercentage = this.getModuleCompletionPercentage(module);
+
+    console.log(`📊 Module ${module.title} completion calculated locally:`, {
+      contentCompleted: module.contentCompleted,
+      videoCompleted: module.videoCompleted,
+      testCompleted: module.testCompleted,
+      moduleCompleted: module.moduleCompleted,
+      completionPercentage: module.completionPercentage,
+      totalContents: module.contents?.length || 0,
+      completedContents: module.contents?.filter(c => c.isCompleted).length || 0,
+      totalVideos: module.videos?.length || 0,
+      completedVideos: module.videos?.filter(v => v.isCompleted).length || 0,
+      totalQuizzes: module.quizzes?.length || 0,
+      completedQuizzes: module.quizzes?.filter(q => q.isCompleted).length || 0
+    });
+
+    // Trigger change detection
+    this.cdr.detectChanges();
   }
 
   // View content (navigate to content viewer)
@@ -1849,7 +2087,7 @@ export class ModuleComponent {
       });
     } else {
       // For students, go to student grades page
-      this.router.navigate(['/student-grades']);
+      this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
     }
   }
 
@@ -1904,8 +2142,15 @@ export class ModuleComponent {
     
     if (video.fileUrl) {
       if (this.sessionService.isStudent()) {
-        // For students: create embedded video player with progress tracking
-        this.createVideoPlayerModal(video);
+        // For students: navigate directly to learn-online page with video parameters
+        this.router.navigate(['/learn-online'], {
+          queryParams: {
+            courseId: this.courseId,
+            courseName: encodeURIComponent(this.courseInfo?.title || `Course ${this.courseId}`),
+            videoId: video.videoId,
+            moduleId: video.moduleId
+          }
+        });
       } else {
         // For instructors: just open video in new tab
         const fullUrl = `http://localhost:8080${video.fileUrl}`;

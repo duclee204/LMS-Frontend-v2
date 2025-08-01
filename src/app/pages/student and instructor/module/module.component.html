@@ -58,7 +58,7 @@
               <span class="menu-text">Modules</span>
             </a>
           </div>
-          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }" *ngIf="!isStudent()">
             <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
               [ngClass]="{ 'active-link': currentPage === 'Video' }">
               <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
@@ -89,7 +89,6 @@
 
             <!-- Grades Content -->
             <div class="course-content" *ngIf="currentPage === 'Grades'">
-              <app-student-grades *ngIf="isStudent()"></app-student-grades>
               <app-grades *ngIf="canManageContent()" [courseId]="courseId || undefined"></app-grades>
             </div>
 

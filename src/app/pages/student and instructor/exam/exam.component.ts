@@ -150,10 +150,10 @@ export class ExamComponent {
           }
         });
       } else {
-        // For instructors/admins, use regular endpoint (only quizzes not in modules)
-        this.examService.getQuizzesByCourse(this.courseId, true).subscribe({
+        // For instructors/admins, load ALL quizzes (including those in modules)
+        this.examService.getQuizzesByCourse(this.courseId, false).subscribe({
           next: (data: any[]) => {
-            console.log('All exams (without module) loaded for instructor/admin:', data);
+            console.log('All exams (including module tests) loaded for instructor/admin:', data);
             this.processExamsData(data, false);
           },
           error: (err: any) => {

@@ -1069,3 +1069,295 @@
     }
   }
 }
+
+/* =========================== TABLE STYLES =========================== */
+.grades-table-container {
+  margin-top: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.grades-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  background: white;
+
+  thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+
+    th {
+      padding: 1rem 0.75rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: center;
+      border: none;
+      white-space: nowrap;
+
+      i {
+        margin-right: 0.5rem;
+        opacity: 0.9;
+      }
+
+      &:first-child {
+        text-align: left;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      transition: all 0.3s ease;
+      border-bottom: 1px solid #e9ecef;
+
+      &:hover {
+        background-color: #f8f9ff;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 1rem 0.75rem;
+      vertical-align: middle;
+      font-size: 0.9rem;
+      border: none;
+    }
+  }
+}
+
+// Table cell specific styles
+.quiz-name {
+  text-align: left !important;
+  min-width: 250px;
+
+  .quiz-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  strong {
+    color: #2d3748;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .feedback-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #0ea5e9;
+    font-size: 0.8rem;
+    
+    i {
+      font-size: 0.75rem;
+    }
+
+    .feedback-text {
+      font-weight: 500;
+    }
+  }
+}
+
+.quiz-type {
+  text-align: center;
+
+  .badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.badge-essay {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    &.badge-choice {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+  }
+}
+
+.score-cell {
+  text-align: center;
+
+  .score-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+
+    &.excellent {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+      color: #065f46;
+    }
+
+    &.good {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      color: #1f2937;
+    }
+
+    &.average {
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      color: #92400e;
+    }
+
+    &.poor {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+      color: #dc2626;
+    }
+
+    .score-separator {
+      font-weight: 400;
+      opacity: 0.7;
+    }
+  }
+}
+
+.percentage-cell {
+  text-align: center;
+
+  .percentage-display {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+
+    &.excellent {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+      color: #065f46;
+    }
+
+    &.good {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      color: #1f2937;
+    }
+
+    &.average {
+      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+      color: #92400e;
+    }
+
+    &.poor {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+      color: #dc2626;
+    }
+  }
+}
+
+.status-cell {
+  text-align: center;
+
+  .status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.status-completed {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+      color: #065f46;
+    }
+
+    &.status-pending {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+      color: #92400e;
+    }
+
+    &.status-grading {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      color: #1f2937;
+    }
+  }
+}
+
+.date-cell {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.85rem;
+  min-width: 120px;
+}
+
+// Responsive design for table
+@media (max-width: 1200px) {
+  .grades-table {
+    font-size: 0.85rem;
+
+    thead th, tbody td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .quiz-name {
+      min-width: 150px;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .grades-table-container {
+    overflow-x: auto;
+  }
+
+  .grades-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .grades-table {
+    thead th, tbody td {
+      padding: 0.5rem 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .quiz-name {
+      min-width: 150px;
+
+      .quiz-title {
+        gap: 0.3rem;
+      }
+
+      strong {
+        font-size: 0.85rem;
+      }
+
+      .feedback-indicator {
+        font-size: 0.75rem;
+      }
+    }
+
+    .badge {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.7rem;
+    }
+
+    .score-display, .percentage-display {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.85rem;
+    }
+
+    .status-badge {
+      padding: 0.3rem 0.6rem;
+      font-size: 0.7rem;
+    }
+  }
+}

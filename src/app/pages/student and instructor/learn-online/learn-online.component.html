@@ -1,6 +1,6 @@
 <!-- learn-online.component.html -->
 <app-notification></app-notification>
-<div class="learn-online-layout">
+<div class="learn-online-layout" [class.no-right-sidebar]="!shouldShowVideoList()">
   <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
     <!-- Sidebar content (unchanged) -->
     <app-sidebar></app-sidebar>
@@ -42,7 +42,7 @@
     </div>
   </main>
   
-  <aside class="right-sidebar" role="complementary" aria-label="Course lessons">
+  <aside class="right-sidebar" *ngIf="shouldShowVideoList()" role="complementary" aria-label="Course lessons">
     <h3>Danh sách bài học</h3>
     
     <!-- Loading state for lessons -->

@@ -340,5 +340,9 @@ export class VideoUploadComponent implements OnInit {
       }
     });
   }
+
+  isStudent(): boolean {
+    return this.sessionService.getUserRole() === 'ROLE_student';
+  }
 }
 

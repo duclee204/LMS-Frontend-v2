@@ -25,6 +25,12 @@ main.content {
   box-sizing: border-box;
 }
 
+/* Full width layout when right sidebar is hidden */
+.learn-online-layout.no-right-sidebar main.content {
+  margin-right: 2rem; /* Remove right sidebar margin */
+  max-width: calc(100% - 262px); /* Only account for left sidebar */
+}
+
 main.content h2 {
   font-size: 1.5rem;
   font-weight: 700;

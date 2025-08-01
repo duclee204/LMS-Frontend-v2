@@ -83,12 +83,56 @@ export class StudentGradesComponent implements OnInit {
       this.courseId = params['courseId'] ? +params['courseId'] : null;
       console.log('📚 Course ID from route:', this.courseId);
       
-      // Load course info if courseId exists
-      if (this.courseId) {
+      // If no courseId from route, try to get it from other sources
+      if (!this.courseId) {
+        this.attemptToGetCourseId();
+      } else {
+        // Load course info if courseId exists
         this.loadCourseInfo();
       }
     });
     this.loadGrades();
+  }
+
+  // Attempt to get courseId from other sources
+  attemptToGetCourseId(): void {
+    console.log('🔍 No courseId from route, attempting to get from other sources...');
+    
+    // Try to get from localStorage if previously stored
+    const storedCourseId = localStorage.getItem('lastCourseId');
+    if (storedCourseId) {
+      this.courseId = +storedCourseId;
+      console.log('💾 Using courseId from localStorage:', this.courseId);
+      this.loadCourseInfo();
+      return;
+    }
+
+    // If still no courseId, try to get first enrolled course
+    this.loadFirstEnrolledCourse();
+  }
+
+  // Load first enrolled course if no courseId available
+  loadFirstEnrolledCourse(): void {
+    console.log('🎓 Attempting to get first enrolled course...');
+    this.apiService.get('/courses/enrolled').subscribe({
+      next: (response: any) => {
+        const courses = Array.isArray(response) ? response : response.data || [];
+        if (courses.length > 0) {
+          this.courseId = courses[0].courseId || courses[0].id;
+          console.log('📚 Using first enrolled course ID:', this.courseId);
+          // Store for future use
+          if (this.courseId) {
+            localStorage.setItem('lastCourseId', this.courseId.toString());
+          }
+          this.loadCourseInfo();
+        } else {
+          console.warn('⚠️ No enrolled courses found');
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error loading enrolled courses:', error);
+      }
+    });
   }
 
   // Initialize user profile
@@ -119,26 +163,38 @@ export class StudentGradesComponent implements OnInit {
   }
 
   navigateToHome(): void {
+    console.log('🏠 Navigating to Home with courseId:', this.courseId);
     if (this.courseId) {
       this.router.navigate(['/course-home'], { queryParams: { courseId: this.courseId } });
+    } else {
+      console.error('❌ CourseId is null, cannot navigate');
     }
   }
 
   navigateToDiscussion(): void {
+    console.log('💬 Navigating to Discussion with courseId:', this.courseId);
     if (this.courseId) {
       this.router.navigate(['/discussion'], { queryParams: { courseId: this.courseId } });
+    } else {
+      console.error('❌ CourseId is null, cannot navigate');
     }
   }
 
   navigateToGrades(): void {
+    console.log('📊 Navigating to Grades with courseId:', this.courseId);
     if (this.courseId) {
       this.router.navigate(['/student-grades'], { queryParams: { courseId: this.courseId } });
+    } else {
+      console.error('❌ CourseId is null, cannot navigate');
     }
   }
 
   navigateToModules(): void {
+    console.log('📚 Navigating to Modules with courseId:', this.courseId);
     if (this.courseId) {
       this.router.navigate(['/module'], { queryParams: { courseId: this.courseId } });
+    } else {
+      console.error('❌ CourseId is null, cannot navigate');
     }
   }
 
@@ -150,8 +206,11 @@ export class StudentGradesComponent implements OnInit {
   }
 
   navigateToTests(): void {
+    console.log('📝 Navigating to Tests with courseId:', this.courseId);
     if (this.courseId) {
       this.router.navigate(['/exam'], { queryParams: { courseId: this.courseId } });
+    } else {
+      console.error('❌ CourseId is null, cannot navigate');
     }
   }
 
@@ -378,5 +437,18 @@ export class StudentGradesComponent implements OnInit {
   getEssayPercentage(submission: EssaySubmission): number {
     if (!submission.isFullyGraded || submission.maxScore === 0) return 0;
     return (submission.totalScore / submission.maxScore) * 100;
+  }
+
+  isStudent(): boolean {
+    return this.sessionService.getUserRole() === 'ROLE_student';
+  }
+
+  // Show feedback modal
+  showFeedbackModal(grade: StudentGrade): void {
+    if (grade.feedback) {
+      alert(`Nhận xét từ giảng viên:\n\n${grade.feedback}`);
+    } else {
+      this.showAlert('Bài này chưa có nhận xét từ giảng viên', 'info');
+    }
   }
 }

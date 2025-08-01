@@ -31,6 +31,7 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
   private currentBlobUrl: string | null = null; // Lưu blob URL hiện tại
   private totalSeekTime = 0; // Tổng thời gian đã tua (giây)
   private maxTotalSeekTime = 120; // Tối đa 2 phút (120 giây) cho toàn bộ video
+  private fromModule: boolean = false; // Track if navigated from module page
 
   // Profile component properties
   username: string = '';
@@ -65,12 +66,28 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     // Initialize user profile data
     this.initializeUserProfile();
 
-    // Check for courseId from query params first
+    // Check for courseId and videoId from query params first
     this.route.queryParams.subscribe(params => {
       if (params['courseId']) {
         this.courseId = parseInt(params['courseId']);
         console.log('CourseId from URL params:', this.courseId);
-        this.loadUserCourses();
+        
+        // Check if navigated from module page
+        this.fromModule = !!params['videoId']; // If videoId exists, came from module
+        console.log('From module page:', this.fromModule);
+        
+        // If videoId is provided, load specific video directly
+        if (params['videoId']) {
+          const videoId = parseInt(params['videoId']);
+          const moduleId = params['moduleId'] ? parseInt(params['moduleId']) : null;
+          console.log('VideoId from URL params:', videoId);
+          console.log('ModuleId from URL params:', moduleId);
+          
+          // Load and play specific video
+          this.loadSpecificVideo(videoId, moduleId);
+        } else {
+          this.loadUserCourses();
+        }
       } else {
         this.loadUserCourses();
       }
@@ -110,6 +127,16 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
     } else {
       this.notificationService.info('Thông báo', message);
     }
+  }
+
+  // Determine if video list should be shown
+  shouldShowVideoList(): boolean {
+    // For students who came from module page, hide the video list
+    if (this.sessionService.isStudent() && this.fromModule) {
+      return false;
+    }
+    // For instructors/admins or students who navigated directly, show video list
+    return true;
   }
 
   // Show message when course has no videos
@@ -254,6 +281,59 @@ export class LearnOnlineComponent implements OnInit, OnDestroy {
             this.showAlert('Không thể tải danh sách video. Vui lòng thử lại!', 'error');
           }
         }
+      }
+    });
+  }
+
+  // Load specific video by videoId and play it directly
+  loadSpecificVideo(videoId: number, moduleId?: number | null) {
+    if (!this.courseId) return;
+    
+    this.loading = true;
+    
+    // For students, only load published videos
+    const publishedOnly = this.sessionService.isStudent();
+    
+    this.apiService.getVideosByCourse(this.courseId, publishedOnly).subscribe({
+      next: data => {
+        console.log(`🔍 Raw videos received for course ${this.courseId}:`, JSON.stringify(data, null, 2));
+        
+        // Always apply client-side filtering for students as additional safety measure
+        if (publishedOnly) {
+          console.log('🔒 Applying additional client-side filtering for students');
+          this.videos = data.filter(video => {
+            const isPublished = video.published === true || video.publish === true || video.status === 'published';
+            return isPublished;
+          });
+        } else {
+          this.videos = data;
+        }
+        
+        // Find and play the specific video
+        const targetVideo = this.videos.find(video => video.videoId === videoId);
+        if (targetVideo) {
+          console.log(`🎯 Found target video: ${targetVideo.title}`);
+          this.playVideo(targetVideo);
+          this.hasNoVideos = false;
+        } else {
+          console.log(`❌ Video with ID ${videoId} not found`);
+          this.showAlert('Video không tìm thấy hoặc chưa được công bố', 'warning');
+          // If specific video not found, play first available video as fallback
+          if (this.videos.length > 0) {
+            this.playVideo(this.videos[0]);
+            this.hasNoVideos = false;
+          } else {
+            this.showNoVideosMessage();
+            this.hasNoVideos = true;
+          }
+        }
+        
+        this.loading = false;
+      },
+      error: err => {
+        console.error('Lỗi khi tải video cụ thể:', err);
+        this.loading = false;
+        this.showAlert('Không thể tải video. Vui lòng thử lại!', 'error');
       }
     });
   }

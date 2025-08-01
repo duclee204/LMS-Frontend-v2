@@ -60,7 +60,7 @@
               <span class="menu-text">Modules</span>
             </a>
           </div>
-          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }">
+          <div class="link" [ngClass]="{ 'active': currentPage === 'Video' }" *ngIf="!isStudent()">
             <a href="#" (click)="navigateToVideo(); $event.preventDefault()"
               [ngClass]="{ 'active-link': currentPage === 'Video' }">
               <span *ngIf="currentPage === 'Video'" class="active-indicator">|</span>
@@ -113,66 +113,83 @@
     <p>Đang tải điểm của bạn...</p>
   </div>
 
-  <!-- Grades grid -->
-  <div *ngIf="!isLoading" class="grades-grid">
+  <!-- Grades table -->
+  <div *ngIf="!isLoading" class="grades-table-container">
     <div *ngIf="filteredGrades.length === 0" class="no-data">
       <i class="fas fa-clipboard-list"></i>
       <p>Bạn chưa có điểm nào</p>
       <small>Hãy tham gia các bài kiểm tra để xem điểm ở đây</small>
     </div>
 
-    <div *ngFor="let grade of filteredGrades" class="grade-card">
-      <div class="card-header">
-        <div class="quiz-info">
-          <h3>{{ grade.quizTitle }}</h3>
-          <p class="course-name">{{ grade.courseName }}</p>
-        </div>
-        <span class="quiz-type-badge" [class.essay]="grade.quizType === 'ESSAY'">
-          {{ grade.quizType === 'ESSAY' ? 'Tự luận' : 'Trắc nghiệm' }}
-        </span>
-      </div>
-
-      <div class="card-body">
-        <div class="score-section">
-          <div class="score-display" [class]="getScoreClass(grade.score, grade.maxScore)">
-            <span class="score">{{ getCorrectAnswers(grade) }}</span>
-            <span class="separator">/</span>
-            <span class="max-score">{{ grade.maxScore }}</span>
-          </div>
-          <div class="percentage">
-            {{ getPercentage(grade).toFixed(1) }}%
-          </div>
-        </div>
-
-        <div class="status-section">
-          <span [class]="getStatusBadgeClass(grade.status)">
-            {{ grade.status === 'COMPLETED' ? 'Hoàn thành' : 
-               grade.status === 'PENDING_GRADE' ? 'Chờ chấm điểm' : 'Chưa nộp' }}
-          </span>
-        </div>
-
-        <div class="date-section">
-          <i class="fas fa-clock"></i>
-          <span>{{ formatDate(grade.submittedAt) }}</span>
-        </div>
-
-        <div *ngIf="grade.feedback" class="feedback-section">
-          <h4>Nhận xét từ giảng viên:</h4>
-          <p>{{ grade.feedback }}</p>
-        </div>
-
-        <!-- View details button for essay -->
-        <div *ngIf="grade.quizType === 'ESSAY'" class="actions-section">
-          <button 
-            class="btn btn-primary btn-sm"
-            (click)="viewEssaySubmission(grade)"
-            [disabled]="isLoadingSubmission">
-            <i class="fas fa-eye"></i>
-            Xem chi tiết bài làm
-          </button>
-        </div>
-      </div>
-    </div>
+    <table *ngIf="filteredGrades.length > 0" class="table table-striped grades-table">
+      <thead>
+        <tr>
+          <th scope="col">
+            <i class="fas fa-book"></i>
+            Tên bài kiểm tra
+          </th>
+          <th scope="col">
+            <i class="fas fa-clipboard-question"></i>
+            Loại bài
+          </th>
+          <th scope="col">
+            <i class="fas fa-star"></i>
+            Điểm số
+          </th>
+          <th scope="col">
+            <i class="fas fa-percentage"></i>
+            Phần trăm
+          </th>
+          <th scope="col">
+            <i class="fas fa-info-circle"></i>
+            Trạng thái
+          </th>
+          <th scope="col">
+            <i class="fas fa-clock"></i>
+            Ngày nộp
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let grade of filteredGrades" class="grade-row">
+          <td class="quiz-name">
+            <div class="quiz-title">
+              <strong>{{ grade.quizTitle }}</strong>
+              <div *ngIf="grade.feedback" class="feedback-indicator" title="Có nhận xét từ giảng viên">
+                <i class="fas fa-comment-alt"></i>
+                <span class="feedback-text">Có nhận xét</span>
+              </div>
+            </div>
+          </td>
+          <td class="quiz-type">
+            <span class="badge" [class.badge-essay]="grade.quizType === 'ESSAY'" [class.badge-choice]="grade.quizType !== 'ESSAY'">
+              {{ grade.quizType === 'ESSAY' ? 'Tự luận' : 'Trắc nghiệm' }}
+            </span>
+          </td>
+          <td class="score-cell">
+            <div class="score-display" [class]="getScoreClass(grade.score, grade.maxScore)">
+              <span class="score-value">{{ getCorrectAnswers(grade) }}</span>
+              <span class="score-separator">/</span>
+              <span class="max-score-value">{{ grade.maxScore }}</span>
+            </div>
+          </td>
+          <td class="percentage-cell">
+            <div class="percentage-display" [class]="getScoreClass(grade.score, grade.maxScore)">
+              {{ getPercentage(grade).toFixed(1) }}%
+            </div>
+          </td>
+          <td class="status-cell">
+            <span class="status-badge" [class]="getStatusBadgeClass(grade.status)">
+              {{ grade.status === 'COMPLETED' ? 'Hoàn thành' : 
+                 grade.status === 'PENDING_GRADE' ? 'Chờ chấm điểm' : 'Chưa nộp' }}
+            </span>
+          </td>
+          <td class="date-cell">
+            {{ formatDate(grade.submittedAt) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Essay Submission Modal -->

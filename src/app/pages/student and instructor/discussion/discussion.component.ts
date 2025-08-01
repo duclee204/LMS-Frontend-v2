@@ -1786,4 +1786,8 @@ export class DiscussionComponent implements OnInit {
     });
   }
 
+  isStudent(): boolean {
+    return this.sessionService.getUserRole() === 'ROLE_student';
+  }
+
 }

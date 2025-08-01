@@ -69,9 +69,12 @@ export class CourseHomeComponent implements OnInit {
       if (this.courseId) {
         this.loadCourseInfo();
         if (this.isStudent()) {
-          this.loadModules();
+          // Students don't need to load modules on course home page
+          // They can access modules through the dedicated module page
+          this.loading = false;
         } else {
           this.loadCourseUsers();
+          this.loadModules(); // Only instructors load modules here
         }
       } else {
         // Even without courseId, show the page structure
@@ -303,7 +306,7 @@ export class CourseHomeComponent implements OnInit {
   // Check if current user is student
   isStudent(): boolean {
     const role = this.sessionService.getUserRole();
-    return role === 'ROLE_STUDENT';
+    return role === 'ROLE_student';
   }
 
   // Check if current user is instructor
