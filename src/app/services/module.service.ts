@@ -16,6 +16,12 @@ export interface ModuleItem {
   videos?: any[];
   quizzes?: any[];
   progress?: any;
+  // ✅ Add progress fields from backend API
+  completionPercentage?: number;
+  contentCompleted?: boolean;
+  videoCompleted?: boolean;
+  testCompleted?: boolean;
+  moduleCompleted?: boolean;
 }
 
 export interface ModuleDto {

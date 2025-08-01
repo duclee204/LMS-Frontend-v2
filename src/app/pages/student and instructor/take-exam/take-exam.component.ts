@@ -90,6 +90,7 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
   public showOneQuestionAtATime = false;
   public attemptNumber = 1;
   public canViewResponses = false;
+  public returnTo: string = 'exam'; // Track where to return after exam completion
 
   // Legacy properties for backward compatibility
   showDropdown = false;
@@ -139,9 +140,11 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.courseId = params['courseId'] ? +params['courseId'] : null;
         this.quizId = params['quizId'] ? +params['quizId'] : null;
         const courseName = params['courseName'];
+        this.returnTo = params['returnTo'] || 'exam'; // Capture returnTo parameter
 
         console.log('📚 Course ID:', this.courseId);
         console.log('🧪 Quiz ID:', this.quizId);
+        console.log('🔄 Return to:', this.returnTo);
 
         // Set course info from params
         if (courseName && courseName.trim()) {
@@ -594,6 +597,11 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           if (this.examData?.quizType === 'MULTIPLE_CHOICE' && this.examResult) {
             console.log('📊 Displaying exam result:', this.examResult);
           }
+          
+          // Auto-navigate back to source page after a short delay
+          setTimeout(() => {
+            this.navigateBackToExams();
+          }, 2000); // 2 second delay to show success message
         },
         error: (error: any) => {
           console.error('❌ Error submitting exam:', error);
@@ -690,17 +698,33 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // Navigate back to exams page
+  // Navigate back to source page (module or exam)
   navigateBackToExams(): void {
     if (this.courseId && this.courseInfo) {
-      this.router.navigate(['/exam'], {
-        queryParams: {
-          courseId: this.courseId,
-          courseName: encodeURIComponent(this.courseInfo.title)
-        }
-      });
+      if (this.returnTo === 'module') {
+        // Navigate back to module page
+        this.router.navigate(['/module'], {
+          queryParams: {
+            courseId: this.courseId,
+            courseName: encodeURIComponent(this.courseInfo.title)
+          }
+        });
+      } else {
+        // Default: navigate back to exam page
+        this.router.navigate(['/exam'], {
+          queryParams: {
+            courseId: this.courseId,
+            courseName: encodeURIComponent(this.courseInfo.title)
+          }
+        });
+      }
     } else {
-      this.router.navigate(['/exam']);
+      // Fallback navigation
+      if (this.returnTo === 'module') {
+        this.router.navigate(['/module']);
+      } else {
+        this.router.navigate(['/exam']);
+      }
     }
   }
 

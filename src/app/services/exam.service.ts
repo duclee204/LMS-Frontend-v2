@@ -75,13 +75,21 @@ export class ExamService {
   ) { }
 
   // Get all quizzes for a course
-  getQuizzesByCourse(courseId: number): Observable<ExamItem[]> {
-    return this.apiService.get(`/quizzes?courseId=${courseId}`);
+  getQuizzesByCourse(courseId: number, withoutModule?: boolean): Observable<ExamItem[]> {
+    let url = `/quizzes?courseId=${courseId}`;
+    if (withoutModule) {
+      url += '&withoutModule=true';
+    }
+    return this.apiService.get(url);
   }
 
   // Get published quizzes for a course (for students)
-  getPublishedQuizzesByCourse(courseId: number): Observable<ExamItem[]> {
-    return this.apiService.get(`/quizzes?courseId=${courseId}&publish=true`);
+  getPublishedQuizzesByCourse(courseId: number, withoutModule?: boolean): Observable<ExamItem[]> {
+    let url = `/quizzes?courseId=${courseId}&publish=true`;
+    if (withoutModule) {
+      url += '&withoutModule=true';
+    }
+    return this.apiService.get(url);
   }
 
   // Get quiz by ID

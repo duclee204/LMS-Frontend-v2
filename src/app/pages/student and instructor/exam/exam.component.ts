@@ -138,10 +138,10 @@ export class ExamComponent {
   loadExams(): void {
     if (this.courseId) {
       if (this.sessionService.isStudent()) {
-        // For students, try published endpoint first
-        this.examService.getPublishedQuizzesByCourse(this.courseId).subscribe({
+        // For students, try published endpoint first (only quizzes not in modules)
+        this.examService.getPublishedQuizzesByCourse(this.courseId, true).subscribe({
           next: (data: any[]) => {
-            console.log('Published exams loaded successfully:', data);
+            console.log('Published exams (without module) loaded successfully:', data);
             this.processExamsData(data, true);
           },
           error: (err: any) => {
@@ -150,10 +150,10 @@ export class ExamComponent {
           }
         });
       } else {
-        // For instructors/admins, use regular endpoint
-        this.examService.getQuizzesByCourse(this.courseId).subscribe({
+        // For instructors/admins, use regular endpoint (only quizzes not in modules)
+        this.examService.getQuizzesByCourse(this.courseId, true).subscribe({
           next: (data: any[]) => {
-            console.log('All exams loaded for instructor/admin:', data);
+            console.log('All exams (without module) loaded for instructor/admin:', data);
             this.processExamsData(data, false);
           },
           error: (err: any) => {
@@ -230,7 +230,7 @@ export class ExamComponent {
     
     console.log('🔄 Fallback: Loading exams with regular endpoint for student');
     
-    this.examService.getQuizzesByCourse(this.courseId).subscribe({
+    this.examService.getQuizzesByCourse(this.courseId, true).subscribe({
       next: (data: any[]) => {
         console.log('✅ Fallback successful - Backend response:', data);
         this.processExamsData(data, true);
@@ -400,7 +400,8 @@ export class ExamComponent {
           courseName: encodeURIComponent(this.courseInfo.title),
           quizId: exam.quizId,
           quizTitle: encodeURIComponent(exam.title),
-          questionType: exam.quizType || 'MULTIPLE_CHOICE'
+          questionType: exam.quizType || 'MULTIPLE_CHOICE',
+          returnTo: 'exam' // Indicate that student came from exam page
         }
       });
     } else {
