@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Avatar URL Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        img { max-width: 100px; max-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>Avatar URL Test</h1>
+    <p>Test avatar: <code>/uploads/avatars/dcafd554-f94a-4c1f-aa29-21ce01f073a8_Screenshot_2025-05-22_153152.png</code></p>
+    
+    <div id="tests"></div>
+
+    <script>
+        const baseUrl = 'http://localhost:8080';
+        const avatarPath = '/uploads/avatars/dcafd554-f94a-4c1f-aa29-21ce01f073a8_Screenshot_2025-05-22_153152.png';
+        const filename = 'dcafd554-f94a-4c1f-aa29-21ce01f073a8_Screenshot_2025-05-22_153152.png';
+        
+        const testUrls = [
+            `${baseUrl}${avatarPath}`,
+            `${baseUrl}/api/files/avatar/${filename}`,
+            `${baseUrl}/images/avatars/${filename}`,
+            `${baseUrl}/static/avatars/${filename}`,
+            `${baseUrl}/files/avatars/${filename}`,
+            `${baseUrl}/api/users/avatar/${filename}`,
+            `${baseUrl}/uploads/${filename}`
+        ];
+
+        const testsDiv = document.getElementById('tests');
+
+        testUrls.forEach((url, index) => {
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-item';
+            testDiv.innerHTML = `
+                <h3>Test ${index + 1}: ${url}</h3>
+                <div id="result-${index}">Testing...</div>
+            `;
+            testsDiv.appendChild(testDiv);
+
+            const img = new Image();
+            img.onload = () => {
+                const resultDiv = document.getElementById(`result-${index}`);
+                resultDiv.innerHTML = `
+                    <div class="success">✅ SUCCESS - Image loaded</div>
+                    <img src="${url}" alt="Avatar">
+                `;
+                testDiv.className = 'test-item success';
+            };
+            img.onerror = () => {
+                const resultDiv = document.getElementById(`result-${index}`);
+                resultDiv.innerHTML = `<div class="error">❌ FAILED - Cannot load image</div>`;
+                testDiv.className = 'test-item error';
+            };
+            img.src = url;
+        });
+    </script>
+</body>
+</html>

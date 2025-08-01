@@ -33,18 +33,15 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadUserFromAPI();
-
+    // Thử lấy từ session trước
     const sessionAvatar = this.sessionService.getAvatarUrl();
-    if (sessionAvatar) {
+    if (sessionAvatar && sessionAvatar !== 'assets/pictures/logocmc.png') {
       this.avatarUrl = sessionAvatar;
-    } else if (!this.avatarUrl || this.avatarUrl.trim() === '') {
-      this.avatarUrl = this.getDefaultAvatar();
-    } else {
-      const processedUrl = this.avatarService.processAvatarUrl(this.avatarUrl);
-      this.avatarUrl = processedUrl || this.getDefaultAvatar();
-      this.sessionService.setAvatarUrl(this.avatarUrl);
+      console.log('✅ Using cached avatar from session:', this.avatarUrl);
     }
+
+    // Load user data từ API
+    this.loadUserFromAPI();
   }
 
   private loadUserFromAPI() {
@@ -53,24 +50,36 @@ export class ProfileComponent implements OnInit {
       if (token) {
         this.userService.getCurrentUser().subscribe({
           next: (user) => {
+            console.log('👤 User data from API:', user);
             this.username = user.fullName || user.username || this.username;
             this.role = user.role || this.role;
 
             if (user.avatarUrl) {
-              const processedUrl = this.avatarService.processAvatarUrl(user.avatarUrl);
-              this.avatarUrl = processedUrl || this.getDefaultAvatar();
-              this.sessionService.setAvatarUrl(this.avatarUrl);
+              console.log('🖼️ Raw avatar URL from database:', user.avatarUrl);
+              const avatarUrl = this.avatarService.getValidAvatarUrl(user.avatarUrl);
+              console.log('🖼️ Final avatar URL:', avatarUrl);
+              
+              // Chỉ cập nhật nếu khác default
+              if (avatarUrl !== this.avatarService.getDefaultAvatarUrl()) {
+                this.avatarUrl = avatarUrl;
+                this.sessionService.setAvatarUrl(this.avatarUrl);
+              }
             } else {
-              this.avatarUrl = this.getDefaultAvatar();
-              this.sessionService.setAvatarUrl(this.avatarUrl);
+              console.log('❌ No avatar URL in database');
+              // Nếu chưa có avatar nào, dùng default
+              if (!this.avatarUrl || this.avatarUrl === this.avatarService.getDefaultAvatarUrl()) {
+                this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
+                this.sessionService.setAvatarUrl(this.avatarUrl);
+              }
             }
           },
-          error: () => {
+          error: (err) => {
+            console.error('❌ Failed to load user from API:', err);
             this.loadUserFromToken();
           }
         });
       } else {
-        this.avatarUrl = this.getDefaultAvatar();
+        this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
         this.sessionService.setAvatarUrl(this.avatarUrl);
       }
     }
@@ -82,20 +91,28 @@ export class ProfileComponent implements OnInit {
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('🔐 Token payload:', payload);
+          console.log('🖼️ Avatar URL in token:', payload.avatarUrl);
+          console.log('🔍 All token fields:', Object.keys(payload));
           this.username = payload.fullName || payload.sub || this.username;
           this.role = payload.role || this.role;
 
           if (payload.avatarUrl) {
-            const processedUrl = this.avatarService.processAvatarUrl(payload.avatarUrl);
-            this.avatarUrl = processedUrl || this.getDefaultAvatar();
-            this.sessionService.setAvatarUrl(this.avatarUrl);
+            console.log('🖼️ Avatar URL from token:', payload.avatarUrl);
+            const avatarUrl = this.avatarService.getValidAvatarUrl(payload.avatarUrl);
+            console.log('🖼️ Final avatar URL from token:', avatarUrl);
+            
+            // Chỉ cập nhật nếu khác default
+            if (avatarUrl !== this.avatarService.getDefaultAvatarUrl()) {
+              this.avatarUrl = avatarUrl;
+              this.sessionService.setAvatarUrl(this.avatarUrl);
+            }
           } else {
-            this.avatarUrl = this.getDefaultAvatar();
-            this.sessionService.setAvatarUrl(this.avatarUrl);
+            console.log('❌ No avatar URL in token');
           }
         } catch (error) {
-          console.error('Token decode error:', error);
-          this.avatarUrl = this.getDefaultAvatar();
+          console.error('❌ Token decode error:', error);
+          this.avatarUrl = this.avatarService.getDefaultAvatarUrl();
           this.sessionService.setAvatarUrl(this.avatarUrl);
         }
       }
@@ -103,7 +120,7 @@ export class ProfileComponent implements OnInit {
   }
 
   private getDefaultAvatar(): string {
-    return 'assets/default-avatar.png';
+    return this.avatarService.getDefaultAvatarUrl();
   }
 
   toggleProfileDropdown(event: Event) {
@@ -124,8 +141,10 @@ export class ProfileComponent implements OnInit {
     this.showProfileUpdateModal = false;
 
     if (updatedUser?.avatarUrl) {
-      const processedUrl = this.avatarService.processAvatarUrl(updatedUser.avatarUrl);
-      this.avatarUrl = processedUrl || this.getDefaultAvatar();
+      console.log('🔄 Profile updated with new avatar:', updatedUser.avatarUrl);
+      const avatarUrl = this.avatarService.getValidAvatarUrl(updatedUser.avatarUrl);
+      console.log('🔄 Processed new avatar URL:', avatarUrl);
+      this.avatarUrl = avatarUrl;
       this.sessionService.setAvatarUrl(this.avatarUrl);
     }
 
@@ -147,13 +166,14 @@ export class ProfileComponent implements OnInit {
 
   getDisplayAvatar(): string {
     const storedAvatar = this.sessionService.getAvatarUrl();
-    return storedAvatar && !storedAvatar.includes('default.png')
+    return storedAvatar && !storedAvatar.includes('logocmc.png')
       ? storedAvatar
-      : 'assets/default-avatar.png';
+      : this.avatarService.getDefaultAvatarUrl();
   }
 
   onAvatarError(event: any) {
-    event.target.src = 'assets/default-avatar.png';
+    console.log('❌ Avatar failed to load, using default');
+    event.target.src = this.avatarService.getDefaultAvatarUrl();
   }
 
 }

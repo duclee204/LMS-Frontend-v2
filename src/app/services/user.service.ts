@@ -12,6 +12,8 @@ export interface User {
   cvUrl?: string | null;
   avatarUrl?: string | null; // ✅ thêm avatarUrl để hiển thị ảnh
   password?: string; // tùy chọn khi cập nhật
+  createdAt?: string; // ✅ thêm thời gian tạo để tính thống kê
+  registrationDate?: string; // ✅ ngày đăng ký
 }
 
 @Injectable({ providedIn: 'root' })
@@ -46,6 +48,7 @@ export class UserService {
           if (avatarUrl.startsWith('/')) {
             avatarUrl = `http://localhost:8080${avatarUrl}`;
           } else {
+            // Nếu chỉ là filename, thêm đường dẫn đầy đủ
             avatarUrl = `http://localhost:8080/uploads/avatars/${avatarUrl}`;
           }
         }
@@ -143,6 +146,24 @@ export class UserService {
 
   return this.http.delete<any>(`${this.apiUrl}/delete/${id}`, { headers });
 }
+
+  // ✅ Lấy thống kê người dùng theo ngày
+  getUserRegistrationStatistics(): Observable<any> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    return this.http.get<any>(`${this.apiUrl}/statistics/registrations`, { headers });
+  }
+
+  // ✅ Lấy người dùng đăng ký trong khoảng thời gian
+  getUsersByDateRange(startDate: string, endDate: string): Observable<User[]> {
+    const token = localStorage.getItem('token');
+    const headers = {
+      Authorization: `Bearer ${token}`
+    };
+    return this.http.get<User[]>(`${this.apiUrl}/list/date-range?startDate=${startDate}&endDate=${endDate}`, { headers });
+  }
 
 
 }

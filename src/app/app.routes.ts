@@ -13,6 +13,7 @@ import { QuestionManagerComponent } from './pages/student and instructor/questio
 import { TakeExamComponent } from './pages/student and instructor/take-exam/take-exam.component';
 import { CategoryComponent } from './pages/admin/category/category.component';
 import { CourseManagementComponent } from './pages/admin/course-management/course-management.component';
+import { RegistrationStatisticsComponent } from './pages/admin/registration-statistics/registration-statistics.component';
 import { AdminDashboardComponent } from './pages/admin/admin-dashboard/admin-dashboard.component';
 import { CalendarComponent } from './pages/student and instructor/calendar/calendar.component';
 import { AssignmentsComponent } from './pages/student and instructor/assignments/assignments.component';
@@ -68,12 +69,14 @@ export const routes: Routes = [
   { path: 'admin/enrollments', component: AdminDashboardComponent, data: { title: 'Enrollment Management' }, canActivate: [authGuard, adminGuard] },
   { path: 'admin/system', component: AdminDashboardComponent, data: { title: 'System Settings' }, canActivate: [authGuard, adminGuard] },
   { path: 'admin/logs', component: AdminDashboardComponent, data: { title: 'System Logs' }, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/registration-statistics', component: RegistrationStatisticsComponent, data: { title: 'Thống kê đăng ký' }, canActivate: [authGuard, adminGuard] },
   
   // Routes for admin sidebar (without /admin prefix)
   { path: 'users', component: AdminDashboardComponent, data: { title: 'User Management' }, canActivate: [authGuard, adminGuard] },
   { path: 'exams', component: AdminDashboardComponent, data: { title: 'Exam Management' }, canActivate: [authGuard, adminGuard] },
   { path: 'modules', component: AdminDashboardComponent, data: { title: 'Module Management' }, canActivate: [authGuard, adminGuard] },
   { path: 'reports', component: AdminDashboardComponent, data: { title: 'Reports & Analytics' }, canActivate: [authGuard, adminGuard] },
+  { path: 'registration-statistics', component: RegistrationStatisticsComponent, data: { title: 'Thống kê đăng ký' }, canActivate: [authGuard, adminGuard] },
   
   { path: 'category', redirectTo: '/category', pathMatch: 'full' },
   { path: 'course-management', redirectTo: '/course-management', pathMatch: 'full' },

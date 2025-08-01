@@ -2,8 +2,8 @@ import { Component, OnInit, EventEmitter, Output, Inject, PLATFORM_ID } from '@a
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService, User } from '../../services/user.service';
-import { SessionService } from '../../services/session.service';
 import { AvatarService } from '../../services/avatar.service';
+import { SessionService } from '../../services/session.service';
 
 @Component({
   selector: 'app-profile-update',
@@ -213,6 +213,14 @@ export class ProfileUpdateComponent implements OnInit {
           this.userService.getUserById(this.userId).subscribe({
             next: (updatedUser: User) => {
               console.log('✅ Reloaded user data:', updatedUser);
+              
+              // Clear preview để force load avatar mới từ server
+              this.imagePreview = null;
+              this.selectedFile = null;
+              
+              // Update current user
+              this.currentUser = updatedUser;
+              
               this.updateSuccess.emit(updatedUser);
               this.closeModal.emit();
               this.loading = false;
@@ -294,19 +302,27 @@ export class ProfileUpdateComponent implements OnInit {
   }
 
   getAvatarUrl(): string {
-    // Check if we have an image preview (newly selected file)
-    if (this.imagePreview) {
+    console.log('🖼️ Getting avatar URL:', {
+      hasImagePreview: !!this.imagePreview,
+      hasSelectedFile: !!this.selectedFile,
+      currentUserAvatar: this.currentUser?.avatarUrl
+    });
+    
+    // Chỉ dùng image preview khi đang chọn file mới
+    if (this.imagePreview && this.selectedFile) {
+      console.log('✅ Using image preview for new file');
       return this.imagePreview;
     }
     
-    // Use current user data from component state
+    // Dùng avatar từ server
     if (this.currentUser?.avatarUrl) {
-      // Process the avatar URL to ensure it has the full path
-      const processedUrl = this.avatarService.processAvatarUrl(this.currentUser.avatarUrl);
-      return processedUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
+      const processedUrl = this.avatarService.getValidAvatarUrl(this.currentUser.avatarUrl);
+      console.log('✅ Using server avatar:', processedUrl);
+      return processedUrl;
     }
     
-    // Return a reliable default avatar URL
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
+    // Fallback to default
+    console.log('❌ Using default avatar');
+    return this.avatarService.getDefaultAvatarUrl();
   }
 }

@@ -23,6 +23,9 @@
     <a (click)="navigateTo('/reports'); $event.preventDefault()" [class.active]="isActiveRoute('/reports')" style="cursor: pointer;">
       <i class="fas fa-chart-bar"></i>Reports
     </a>
+    <a (click)="navigateTo('/registration-statistics'); $event.preventDefault()" [class.active]="isActiveRoute('/registration-statistics')" style="cursor: pointer;">
+      <i class="fas fa-user-plus"></i>Thống kê đăng ký
+    </a>
     <a (click)="navigateTo('/settings'); $event.preventDefault()" [class.active]="isActiveRoute('/settings')" style="cursor: pointer;">
       <i class="fas fa-cog"></i>Settings
     </a>

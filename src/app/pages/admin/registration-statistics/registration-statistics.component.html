@@ -1,0 +1,379 @@
+<div class="registration-statistics-container">
+  <app-sidebaradmin></app-sidebaradmin>
+  
+  <main class="main-content">
+    <div class="header">
+      <h1>Thống kê người đăng ký mới</h1>
+      <app-profile 
+        [username]="username" 
+        [avatarUrl]="avatarUrl"
+        (profileUpdate)="onProfileUpdate()"
+        (logout)="onLogout()">
+      </app-profile>
+    </div>
+
+    <div class="content" *ngIf="!loading; else loadingTemplate" id="statistics-content">
+      <!-- Statistics Cards -->
+      <div class="statistics-cards">
+        <div class="stat-card today" (click)="filterByToday()" [class.active]="selectedTimeFilter === 'today'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.today }}</h3>
+            <p>Hôm nay</p>
+          </div>
+        </div>
+
+        <div class="stat-card week" (click)="filterByWeek()" [class.active]="selectedTimeFilter === 'week'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-week"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisWeek }}</h3>
+            <p>Tuần này</p>
+          </div>
+        </div>
+
+        <div class="stat-card month" (click)="filterByMonth()" [class.active]="selectedTimeFilter === 'month'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisMonth }}</h3>
+            <p>Tháng này</p>
+          </div>
+        </div>
+
+        <div class="stat-card year" (click)="filterByYear()" [class.active]="selectedTimeFilter === 'year'">
+          <div class="stat-icon">
+            <i class="fas fa-calendar"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.thisYear }}</h3>
+            <p>Năm này</p>
+          </div>
+        </div>
+
+        <div class="stat-card total" (click)="filterByTotal()" [class.active]="!selectedTimeFilter && !searchTerm && !selectedRole && !selectedStatus">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h3>{{ statistics.total }}</h3>
+            <p>Tổng cộng</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Quality Notice -->
+      <div class="data-quality-notice" *ngIf="!hasRegistrationDates || usersWithoutDates > 0">
+        <div class="notice-content">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div class="notice-text">
+            <h4>Thông báo về dữ liệu</h4>
+            <p *ngIf="!hasRegistrationDates">
+              Không có thông tin ngày đăng ký trong dữ liệu. Thống kê theo thời gian có thể không chính xác.
+            </p>
+            <p *ngIf="hasRegistrationDates && usersWithoutDates > 0">
+              {{ usersWithoutDates }} người dùng không có thông tin ngày đăng ký. 
+              Chỉ {{ statistics.total - usersWithoutDates }} người dùng được tính vào thống kê theo thời gian.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="refreshData()" [disabled]="loading">
+          <i class="fas fa-refresh"></i>
+          Làm mới
+        </button>
+        <button class="btn btn-secondary" (click)="exportStatistics()">
+          <i class="fas fa-download"></i>
+          Xuất JSON
+        </button>
+        <button class="btn btn-pdf" (click)="exportToPDF()">
+          <i class="fas fa-file-pdf"></i>
+          Xuất PDF
+        </button>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-section">
+        <!-- Weekly Registrations Chart -->
+        <div class="chart-container">
+          <h3>Đăng ký tuần trong tháng</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of weeklyRegistrations" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' người'"
+              >
+                <div 
+                  class="bar weekly-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(weeklyRegistrations))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label }}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Summary for PDF -->
+          <div class="chart-summary pdf-only">
+            <p><strong>Tổng đăng ký trong tháng:</strong> {{ getTotalWeeklyRegistrations() }} người</p>
+            <p><strong>Tuần có nhiều đăng ký nhất:</strong> 
+              {{ getPeakWeeklyRegistration().label }} 
+              ({{ getPeakWeeklyRegistration().value }} người)
+            </p>
+          </div>
+        </div>
+
+        <!-- Daily Registrations Chart -->
+        <div class="chart-container">
+          <h3>Đăng ký tháng trong năm</h3>
+          <div class="chart">
+            <div class="chart-bars">
+              <div 
+                *ngFor="let item of monthlyRegistrations" 
+                class="bar-container"
+                [title]="item.label + ': ' + item.value + ' người'"
+              >
+                <div 
+                  class="bar monthly-bar"
+                  [style.height.%]="getBarHeight(item.value, getMaxValue(monthlyRegistrations))"
+                >
+                  <span class="bar-value">{{ item.value }}</span>
+                </div>
+                <span class="bar-label">{{ item.label.replace('Tháng ', '') }}</span>
+              </div>
+            </div>
+          </div>
+          <!-- Summary for PDF -->
+          <div class="chart-summary pdf-only">
+            <p><strong>Tổng đăng ký trong năm:</strong> {{ getTotalMonthlyRegistrations() }} người</p>
+            <p><strong>Tháng có nhiều đăng ký nhất:</strong> 
+              {{ getPeakMonthlyRegistration().label }} 
+              ({{ getPeakMonthlyRegistration().value }} người)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Users Section with Pagination -->
+      <div class="all-users-section">
+        <div class="section-header">
+          <h3>Tất cả người dùng</h3>
+          <div class="total-count" *ngIf="totalUsers > 0">
+            <span class="count-badge">{{ totalUsers }}</span>
+            <span>{{ searchTerm || selectedRole || selectedStatus ? 'kết quả' : 'người dùng' }}</span>
+          </div>
+        </div>
+        
+        <!-- Active Time Filter Notice -->
+        <div class="active-filter-notice" *ngIf="selectedTimeFilter || (!selectedTimeFilter && (searchTerm || selectedRole || selectedStatus))">
+          <i class="fas fa-filter" *ngIf="selectedTimeFilter"></i>
+          <i class="fas fa-users" *ngIf="!selectedTimeFilter"></i>
+          <span *ngIf="selectedTimeFilter">Đang hiển thị người dùng: 
+            <strong>{{ getTimeFilterLabel() }}</strong>
+          </span>
+          <span *ngIf="!selectedTimeFilter">Đang hiển thị: 
+            <strong>tất cả người dùng</strong>
+          </span>
+          <button class="btn-clear-time-filter" (click)="selectedTimeFilter = ''; applyFilters()" *ngIf="selectedTimeFilter">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <!-- Filters and Search -->
+        <div class="filters-container">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm theo tên, email..." 
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+            />
+          </div>
+          
+          <div class="filter-group">
+            <select [(ngModel)]="selectedRole" (change)="onRoleFilterChange()">
+              <option value="">Tất cả vai trò</option>
+              <option value="admin">Admin</option>
+              <option value="instructor">Instructor</option>
+              <option value="student">Student</option>
+            </select>
+            
+            <select [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
+              <option value="">Tất cả trạng thái</option>
+              <option value="verified">Đã xác thực</option>
+              <option value="unverified">Chưa xác thực</option>
+            </select>
+            
+            <button class="btn btn-clear" (click)="clearFilters()">
+              <i class="fas fa-times"></i>
+              Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+
+        <!-- Results Info -->
+        <div class="results-info">
+          <span>Hiển thị {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalUsers) }} của {{ totalUsers }} người dùng</span>
+          
+          <div class="items-per-page">
+            <label>Hiển thị:</label>
+            <select [value]="itemsPerPage" (change)="changeItemsPerPage(+$any($event).target.value)">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>mục/trang</span>
+          </div>
+        </div>
+
+        <!-- All Users Table -->
+        <div class="table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="sortBy('userId')" [class.active]="sortField === 'userId'">
+                  ID
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'userId',
+                    'fa-sort-up': sortField === 'userId' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'userId' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('username')" [class.active]="sortField === 'username'">
+                  Tên đăng nhập
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'username',
+                    'fa-sort-up': sortField === 'username' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'username' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('fullName')" [class.active]="sortField === 'fullName'">
+                  Họ và tên
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'fullName',
+                    'fa-sort-up': sortField === 'fullName' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'fullName' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('email')" [class.active]="sortField === 'email'">
+                  Email
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'email',
+                    'fa-sort-up': sortField === 'email' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'email' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('role')" [class.active]="sortField === 'role'">
+                  Vai trò
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'role',
+                    'fa-sort-up': sortField === 'role' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'role' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('createdAt')" [class.active]="sortField === 'createdAt'">
+                  Ngày đăng ký
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'createdAt',
+                    'fa-sort-up': sortField === 'createdAt' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'createdAt' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('verified')" [class.active]="sortField === 'verified'">
+                  Trạng thái
+                  <i class="fas" [ngClass]="{
+                    'fa-sort': sortField !== 'verified',
+                    'fa-sort-up': sortField === 'verified' && sortDirection === 'asc',
+                    'fa-sort-down': sortField === 'verified' && sortDirection === 'desc'
+                  }"></i>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of paginatedUsers">
+                <td>{{ user.userId }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.fullName || 'Chưa cập nhật' }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="role-badge" [ngClass]="'role-' + user.role.toLowerCase().replace('role_', '')">
+                    {{ getDisplayRole(user.role) }}
+                  </span>
+                </td>
+                <td>{{ getFormattedDate(user.createdAt || user.registrationDate) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="user.verified ? 'verified' : 'unverified'">
+                    {{ user.verified ? 'Đã xác thực' : 'Chưa xác thực' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Empty state -->
+          <div class="empty-state" *ngIf="paginatedUsers.length === 0 && !loading">
+            <i class="fas fa-users"></i>
+            <h4>Không tìm thấy người dùng</h4>
+            <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" *ngIf="totalPages > 1">
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === 1" 
+            (click)="previousPage()"
+          >
+            <i class="fas fa-chevron-left"></i>
+            Trước
+          </button>
+          
+          <div class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-number"
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="pagination-btn" 
+            [disabled]="currentPage === totalPages" 
+            (click)="nextPage()"
+          >
+            Sau
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Template -->
+    <ng-template #loadingTemplate>
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Đang tải dữ liệu thống kê...</p>
+      </div>
+    </ng-template>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="error">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+  </main>
+</div>
