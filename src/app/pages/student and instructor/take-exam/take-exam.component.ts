@@ -49,6 +49,7 @@ export interface ExamData {
   hasTimeLimit: boolean;
   shuffleAnswers?: boolean;
   allowMultipleAttempts?: boolean;
+  maxAttempts?: number;
   showQuizResponses?: boolean;
   showOneQuestionAtATime?: boolean;
 }
@@ -268,6 +269,7 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
           hasTimeLimit: quiz.timeLimit && quiz.timeLimit > 0,
           shuffleAnswers: quiz.shuffleAnswers || false,
           allowMultipleAttempts: quiz.allowMultipleAttempts || false,
+          maxAttempts: quiz.maxAttempts || 2,
           showQuizResponses: quiz.showQuizResponses || false,
           showOneQuestionAtATime: quiz.showOneQuestionAtATime || false,
           questions: questions.map((q: any, index: number) => {
@@ -591,17 +593,14 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
             console.log('📊 Updated attempt count:', this.attemptNumber);
           }
           
-          this.showAlert('Bài thi đã được nộp thành công!', 'success');
+          this.showAlert('Bài thi đã được nộp thành công! Bạn có thể xem kết quả chi tiết bên dưới.', 'success');
           
           // Show result if it's multiple choice
           if (this.examData?.quizType === 'MULTIPLE_CHOICE' && this.examResult) {
             console.log('📊 Displaying exam result:', this.examResult);
           }
           
-          // Auto-navigate back to source page after a short delay
-          setTimeout(() => {
-            this.navigateBackToExams();
-          }, 2000); // 2 second delay to show success message
+          // Remove auto-navigation - let student review results and decide when to go back
         },
         error: (error: any) => {
           console.error('❌ Error submitting exam:', error);
@@ -735,6 +734,13 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // Check if user has exceeded maximum attempts
+    const maxAttempts = this.examData.maxAttempts || 2;
+    if (this.attemptNumber >= maxAttempts) {
+      this.showAlert(`Bạn đã hết số lần làm bài. Tối đa: ${maxAttempts} lần`, 'warning');
+      return;
+    }
+
     // Reset exam state
     this.isExamStarted = false;
     this.isExamCompleted = false;
@@ -754,7 +760,7 @@ export class TakeExamComponent implements OnInit, AfterViewInit, OnDestroy {
     // Reload exam data to get fresh questions
     this.loadExamData();
 
-    this.showAlert('Bắt đầu lần làm mới', 'info');
+    this.showAlert(`Bắt đầu lần làm thứ ${this.attemptNumber}/${maxAttempts}`, 'info');
   }
 
   // Navigation methods

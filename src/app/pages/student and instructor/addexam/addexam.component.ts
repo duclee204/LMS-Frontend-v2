@@ -29,6 +29,7 @@ export interface ExamData {
   hasTimeLimit: boolean;
   shuffleAnswers: boolean;
   allowMultipleAttempts: boolean;
+  maxAttempts: number;
   showQuizResponses: boolean;
   showOneQuestionAtATime: boolean;
   publish: boolean;
@@ -67,6 +68,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     hasTimeLimit: false,
     shuffleAnswers: false,
     allowMultipleAttempts: false,
+    maxAttempts: 2,
     showQuizResponses: false,
     showOneQuestionAtATime: false,
     publish: false
@@ -343,6 +345,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
       timeLimit: this.examData.hasTimeLimit ? this.examData.timeLimit : null,
       shuffleAnswers: this.examData.shuffleAnswers,
       allowMultipleAttempts: this.examData.allowMultipleAttempts,
+      maxAttempts: this.examData.maxAttempts || 2,
       showQuizResponses: this.examData.showQuizResponses,
       showOneQuestionAtATime: this.examData.showOneQuestionAtATime,
       publish: this.examData.publish
@@ -355,6 +358,7 @@ export class AddExamComponent implements OnInit, AfterViewInit {
     console.log('🧪 QuizType:', dto.quizType);
     console.log('📖 Description:', dto.description);
     console.log('⏱️ TimeLimit:', dto.timeLimit);
+    console.log('🔢 MaxAttempts:', dto.maxAttempts);
     console.log('🎯 Publish:', dto.publish);
 
     return dto;

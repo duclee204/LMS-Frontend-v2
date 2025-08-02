@@ -716,16 +716,38 @@ export class ModuleComponent {
       console.log(`🎥 No videos found in module ${module.title}`);
     }
 
-    // Set quiz completion status
+    // Set quiz completion status - Load individual quiz progress
     if (module.quizzes && module.quizzes.length > 0) {
       console.log(`📝 Processing ${module.quizzes.length} quizzes in module ${module.title}`);
       console.log(`📝 Backend testCompleted status: ${module.testCompleted}`);
       
+      // Load individual quiz completion status for each quiz
       module.quizzes.forEach(quiz => {
         if (quiz.quizId) {
-          // Use backend module-level test completion status
-          quiz.isCompleted = module.testCompleted || false;
-          console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) isCompleted: ${quiz.isCompleted}`);
+          this.moduleContentService.getQuizProgress(quiz.quizId).subscribe({
+            next: (progress: any) => {
+              console.log(`✅ Individual quiz progress for ${quiz.title}:`, progress);
+              // Use hasSubmitted to determine completion status
+              quiz.isCompleted = progress.hasSubmitted || false;
+              quiz.score = progress.result?.score;
+              console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) isCompleted: ${quiz.isCompleted}, score: ${quiz.score}`);
+              
+              // Update module-level completion after loading individual quiz status
+              this.updateModuleLevelCompletion(module);
+            },
+            error: (err: any) => {
+              console.error(`❌ Error loading individual quiz progress for ${quiz.title}:`, err);
+              quiz.isCompleted = false;
+              quiz.score = undefined;
+              console.log(`📝 Quiz ${quiz.title} (ID: ${quiz.quizId}) marked as not completed due to error`);
+              
+              // Update module-level completion even if individual quiz failed
+              this.updateModuleLevelCompletion(module);
+            }
+          });
+        } else {
+          quiz.isCompleted = false;
+          console.log(`⚠️ Quiz "${quiz.title}" has no quizId, marking as not completed`);
         }
       });
     } else {

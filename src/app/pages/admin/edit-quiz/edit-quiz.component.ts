@@ -10,6 +10,7 @@ interface QuizEditData {
   description: string;
   timeLimit: number;
   allowMultipleAttempts: boolean;
+  maxAttempts: number;
   questions: QuestionData[];
 }
 
@@ -66,6 +67,7 @@ export class EditQuizComponent implements OnInit {
       description: [''],
       timeLimit: [60, [Validators.required, Validators.min(1)]],
       allowMultipleAttempts: [false],
+      maxAttempts: [2, [Validators.min(1), Validators.max(10)]],
       questions: this.fb.array([])
     });
   }
@@ -94,7 +96,8 @@ export class EditQuizComponent implements OnInit {
       title: data.title,
       description: data.description,
       timeLimit: data.timeLimit,
-      allowMultipleAttempts: data.allowMultipleAttempts || false
+      allowMultipleAttempts: data.allowMultipleAttempts || false,
+      maxAttempts: data.maxAttempts || 2
     });
 
     // Clear existing questions

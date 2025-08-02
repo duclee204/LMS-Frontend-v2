@@ -95,7 +95,12 @@
 
                   <div class="detail-item" *ngIf="examData.allowMultipleAttempts && attemptNumber > 1">
                     <i class="fas fa-redo"></i>
-                    <span>Lần làm thứ {{ attemptNumber }}</span>
+                    <span>Lần làm thứ {{ attemptNumber }}/{{ examData.maxAttempts || 2 }}</span>
+                  </div>
+
+                  <div class="detail-item" *ngIf="examData.allowMultipleAttempts && examData.maxAttempts">
+                    <i class="fas fa-list-ol"></i>
+                    <span>Tối đa {{ examData.maxAttempts }} lần làm</span>
                   </div>
                 </div>
 
@@ -493,19 +498,22 @@
                 <!-- Information message for multiple attempts -->
                 <div *ngIf="hasSubmitted && examData?.allowMultipleAttempts" class="info-message">
                   <i class="fas fa-check-circle"></i>
-                  <p>Bạn đã hoàn thành lần làm thứ {{ attemptNumber }}. Bạn có thể làm lại bài thi này.</p>
+                  <p>Bạn đã hoàn thành lần làm thứ {{ attemptNumber }}/{{ (examData?.maxAttempts || 2) }}. 
+                     <span *ngIf="attemptNumber < (examData?.maxAttempts || 2)">Bạn có thể làm lại bài thi này.</span>
+                     <span *ngIf="attemptNumber >= (examData?.maxAttempts || 2)">Bạn đã hết số lần làm bài.</span>
+                  </p>
                 </div>
 
                 <div class="completion-actions">
                   <button class="btn primary" (click)="navigateBackToExams()">
-                    <i class="fas fa-arrow-left"></i> Quay lại danh sách bài thi
+                    <i class="fas fa-arrow-left"></i> Hoàn tất và quay lại
                   </button>
                   
                   <button 
-                    *ngIf="examData?.allowMultipleAttempts" 
+                    *ngIf="examData?.allowMultipleAttempts && attemptNumber < (examData?.maxAttempts || 2)" 
                     class="btn secondary" 
                     (click)="retakeExam()">
-                    <i class="fas fa-redo"></i> Làm lại bài thi
+                    <i class="fas fa-redo"></i> Làm lại bài thi ({{ attemptNumber }}/{{ examData?.maxAttempts || 2 }})
                   </button>
                 </div>
               </div>

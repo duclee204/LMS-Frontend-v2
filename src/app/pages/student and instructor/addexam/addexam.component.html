@@ -132,6 +132,13 @@
                     <input type="checkbox" name="allowMultipleAttempts" [(ngModel)]="examData.allowMultipleAttempts" />
                     Cho phép làm bài nhiều lần
                   </label>
+                  
+                  <!-- Số lần làm tối đa - chỉ hiển thị khi cho phép làm nhiều lần -->
+                  <label *ngIf="examData.allowMultipleAttempts" class="max-attempts-container">
+                    Số lần làm tối đa:
+                    <input type="number" name="maxAttempts" [(ngModel)]="examData.maxAttempts" min="1" max="10" />
+                    <small class="help-text">Mặc định: 2 lần</small>
+                  </label>
 
                   <!-- Tùy chọn chỉ dành cho trắc nghiệm -->
                   <label *ngIf="examData.quizType === 'MULTIPLE_CHOICE'">
@@ -152,7 +159,9 @@
 
             <div class="buttons-container">
               <button type="button" class="btn cancel" (click)="cancelExam()">Cancel</button>
-              <button type="button" class="btn save-publish" (click)="saveAndPublish()" [disabled]="!isFormValid() || isSaving">
+              <button type="button" class="btn save-publish" 
+                      (click)="saveAndPublish()" 
+                      [disabled]="!isFormValid() || isSaving">
                 {{ isSaving ? 'Saving...' : 'Save & Publish' }}
               </button>
               <button type="button" class="btn save" (click)="saveExam()" [disabled]="!isFormValid() || isSaving">

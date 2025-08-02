@@ -201,4 +201,9 @@ export class ModuleContentService {
   deleteQuiz(quizId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/quizzes/${quizId}`);
   }
+
+  // Quiz progress methods
+  getQuizProgress(quizId: number): Observable<any> {
+    return this.http.get(`http://localhost:8080/api/exam/check-submission/${quizId}`);
+  }
 }
